@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OUTBREAK ANALYST — Aegis Station</title>
+<style>
+:root{--navy:#050b16;--ink:#0a1424;--ti:#8d9bab;--ti2:#4a5767;--sil:#e4ebf2;--cy:#62e3ff;--uv:#9a7bff;--em:#3fe0a0;--co:#ff5d62;--am:#e2b24c;--acc:#62e3ff;--pan:rgba(6,12,22,.80)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--navy);color:var(--sil);font:14px/1.45 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+#bg{position:fixed;inset:0;width:100%;height:100%;display:block}
+#app{position:fixed;inset:0;display:grid;grid-template-columns:196px minmax(0,1fr) 310px;grid-template-rows:50px minmax(0,1fr);grid-template-areas:"top top top" "rail stage comms";gap:10px;padding:10px}
+.panel{position:relative;background:linear-gradient(180deg,rgba(13,24,42,.84),var(--pan));border:1px solid rgba(141,155,171,.26);clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.panel::before{content:"";position:absolute;left:0;top:0;width:22px;height:22px;border-left:2px solid var(--acc);border-top:2px solid var(--acc);clip-path:polygon(14px 0,100% 0,100% 3px,16px 3px,3px 16px,3px 100%,0 100%,0 14px);opacity:.9;pointer-events:none;transition:border-color .6s}
+#top{grid-area:top;display:flex;align-items:center;gap:22px;padding:0 20px;white-space:nowrap}
+.brand{display:flex;flex-direction:column;line-height:1.1}
+.brand b{letter-spacing:.28em;font-size:13px}
+.brand span{font-size:9px;letter-spacing:.2em;color:var(--ti)}
+#loc{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15;overflow:hidden}
+#loc i{font-style:normal;letter-spacing:.16em;font-size:12px;color:var(--acc);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis}
+#loc span{font-size:10px;color:var(--ti);letter-spacing:.1em;text-transform:uppercase}
+.integ{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.14em;color:var(--ti)}
+.bar{width:110px;height:6px;background:rgba(141,155,171,.2);position:relative;overflow:hidden}
+.bar>i{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--em);transform-origin:left;transition:transform .8s cubic-bezier(.2,.8,.2,1),background .6s}
+.integ b{font:600 13px ui-monospace,Menlo,Consolas,monospace;color:var(--sil);min-width:26px;text-align:right}
+#clock{font:600 12px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.1em;color:var(--sil)}
+.audio{display:flex;align-items:center;gap:8px}
+.audio button{width:30px;height:28px;background:rgba(141,155,171,.12);border:1px solid rgba(141,155,171,.35);display:grid;place-items:center}
+.audio button:hover{border-color:var(--acc)}
+.audio button.off{color:var(--co)}
+#rail{grid-area:rail;padding:14px 10px;display:flex;flex-direction:column;gap:4px;overflow:auto}
+.rh{font-size:9px;letter-spacing:.22em;color:var(--ti);margin:4px 6px 6px}
+.rbtn{display:flex;align-items:center;gap:8px;text-align:left;background:transparent;border:1px solid transparent;border-left:2px solid rgba(141,155,171,.3);padding:6px 8px;font-size:12px;color:var(--ti);transition:background .2s,color .2s,border-color .2s;position:relative}
+.rbtn:hover{background:rgba(98,227,255,.07);color:var(--sil)}
+.rbtn.on{color:var(--sil);border-left-color:var(--acc);background:linear-gradient(90deg,rgba(98,227,255,.14),transparent)}
+.rbtn .n{font:600 10px ui-monospace,monospace;color:var(--ti2);min-width:18px}
+.rbtn .t{flex:1;line-height:1.15}
+.rbtn .s{font:700 10px ui-monospace,monospace;color:var(--em)}
+#stage{grid-area:stage;overflow:auto;padding:16px 18px 24px;background:linear-gradient(180deg,rgba(9,17,31,.74),rgba(5,10,19,.80))}
+#comms{grid-area:comms;display:flex;flex-direction:column;padding:14px;overflow:hidden}
+.ch{display:flex;align-items:center;justify-content:space-between;font-size:10px;letter-spacing:.2em;color:var(--acc)}
+.sig{display:flex;gap:2px;align-items:flex-end;height:12px}.sig i{width:3px;background:var(--acc);animation:sg 1.4s ease-in-out infinite}.sig i:nth-child(1){height:4px}.sig i:nth-child(2){height:7px;animation-delay:.2s}.sig i:nth-child(3){height:10px;animation-delay:.4s}.sig i:nth-child(4){height:12px;animation-delay:.6s}
+@keyframes sg{50%{opacity:.25}}
+.from{margin-top:10px;font-size:11px;color:var(--ti);letter-spacing:.08em}
+#msg{margin:6px 0 10px;font-size:13px;line-height:1.5;min-height:110px}
+#msg::after{content:"▍";color:var(--acc);animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+#hintBtn{align-self:flex-start;background:transparent;border:1px solid rgba(141,155,171,.4);padding:4px 10px;font-size:11px;letter-spacing:.1em;color:var(--sil)}
+#hintBtn:hover{border-color:var(--acc);color:var(--acc)}
+#log{margin-top:12px;border-top:1px solid rgba(141,155,171,.2);padding-top:8px;flex:1;overflow:auto;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;color:var(--ti)}
+#log div{padding:2px 0;animation:fi .5s}
+#log .w{color:var(--am)}#log .b{color:var(--co)}#log .g{color:var(--em)}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}}
+.mhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(141,155,171,.22)}
+.mno{font:600 11px ui-monospace,monospace;letter-spacing:.2em;color:var(--acc)}
+.mhead h2{margin:0;font-size:22px;letter-spacing:.04em;font-weight:600}
+.env{font-size:11px;color:var(--ti);letter-spacing:.14em;text-transform:uppercase}
+.row{display:flex;flex-wrap:wrap;gap:14px}
+.col{flex:1 1 320px;min-width:0}
+.box{position:relative;border:1px solid rgba(141,155,171,.24);background:rgba(4,9,17,.55);padding:10px 12px;margin-bottom:12px}
+.box>.ph{font-size:10px;letter-spacing:.2em;color:var(--ti);text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
+.box>.ph b{color:var(--acc);font-weight:600}
+canvas.inst{display:block;width:100%;background:rgba(2,6,13,.7);border:1px solid rgba(141,155,171,.2)}
+svg.inst{display:block;width:100%;background:rgba(2,6,13,.7);border:1px solid rgba(141,155,171,.2)}
+.btn{background:rgba(98,227,255,.08);border:1px solid rgba(98,227,255,.5);padding:8px 16px;letter-spacing:.12em;font-size:12px;text-transform:uppercase;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:background .2s,box-shadow .2s,transform .1s;color:var(--sil)}
+.btn:hover:not(:disabled){background:rgba(98,227,255,.18);box-shadow:0 0 14px rgba(98,227,255,.25) inset}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn.pri{background:rgba(98,227,255,.22);border-color:var(--cy)}
+.btn.warn{border-color:var(--co);background:rgba(255,93,98,.12)}
+.btn.ok{border-color:var(--em);background:rgba(63,224,160,.12)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:8px}
+.kv div{border-left:2px solid rgba(141,155,171,.3);padding:2px 8px}
+.kv small{display:block;font-size:9px;letter-spacing:.16em;color:var(--ti);text-transform:uppercase}
+.kv b{font:600 17px ui-monospace,Menlo,Consolas,monospace}
+.kv b.c{color:var(--cy)}.kv b.a{color:var(--am)}.kv b.r{color:var(--co)}.kv b.g{color:var(--em)}.kv b.v{color:var(--uv)}
+.seg{display:inline-flex;border:1px solid rgba(141,155,171,.4);background:rgba(2,6,13,.6)}
+.seg button{background:transparent;border:0;padding:6px 12px;font-size:12px;color:var(--ti);border-right:1px solid rgba(141,155,171,.25);transition:background .2s,color .2s}
+.seg button:last-child{border-right:0}
+.seg button.on{background:rgba(98,227,255,.2);color:var(--sil);box-shadow:inset 0 -2px 0 var(--acc)}
+.seg button:hover:not(.on){color:var(--sil)}
+.ctl{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.ctl>label{font-size:10px;letter-spacing:.16em;color:var(--ti);text-transform:uppercase}
+.tg{display:inline-flex;align-items:center;gap:10px;background:transparent;border:0;padding:4px 0;font-size:12px}
+.tg .sw{width:42px;height:18px;border:1px solid rgba(141,155,171,.5);background:rgba(2,6,13,.7);position:relative;transition:border-color .2s}
+.tg .sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;background:var(--ti);transition:transform .25s cubic-bezier(.3,1.2,.4,1),background .2s}
+.tg.on .sw{border-color:var(--acc)}.tg.on .sw::after{transform:translateX(24px);background:var(--acc);box-shadow:0 0 8px var(--acc)}
+.slider{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;margin-bottom:8px}
+.slider .sl{font-size:10px;letter-spacing:.16em;color:var(--ti);text-transform:uppercase}
+.slider .sv{font:600 13px ui-monospace,monospace;color:var(--acc)}
+.slider input{grid-column:1/3;width:100%;-webkit-appearance:none;appearance:none;height:22px;background:transparent;margin:0;--f:50%}
+.slider input::-webkit-slider-runnable-track{height:6px;background:linear-gradient(90deg,var(--acc) var(--f),rgba(141,155,171,.22) var(--f));border:1px solid rgba(141,155,171,.3)}
+.slider input::-moz-range-track{height:6px;background:linear-gradient(90deg,var(--acc) var(--f),rgba(141,155,171,.22) var(--f));border:1px solid rgba(141,155,171,.3)}
+.slider input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:20px;margin-top:-8px;background:var(--sil);border:2px solid var(--acc);clip-path:polygon(0 3px,3px 0,100% 0,100% calc(100% - 3px),calc(100% - 3px) 100%,0 100%)}
+.slider input::-moz-range-thumb{width:10px;height:18px;border-radius:0;background:var(--sil);border:2px solid var(--acc)}
+.slider input:focus-visible{outline:1px dashed var(--acc)}
+.dialwrap{display:inline-flex;flex-direction:column;align-items:center;width:104px;margin:0 6px 6px 0}
+.dial{width:84px;height:84px;touch-action:none;cursor:grab;border-radius:50%}
+.dial:focus-visible{outline:1px dashed var(--acc)}
+.dial svg{width:100%;height:100%}
+.dbg{fill:#0a1424;stroke:rgba(141,155,171,.5);stroke-width:1.5}
+.dt line{stroke:rgba(141,155,171,.5);stroke-width:1}
+.darc{fill:none;stroke:var(--acc);stroke-width:3;stroke-linecap:round}
+.dn line{stroke:var(--sil);stroke-width:2.5;stroke-linecap:round}
+.dcap{fill:#1b2a42;stroke:var(--ti);stroke-width:1.5}
+.dl{font-size:9px;letter-spacing:.14em;color:var(--ti);text-transform:uppercase;text-align:center;margin-top:2px}
+.dv{font:600 12px ui-monospace,monospace;color:var(--acc)}
+.rec{position:relative;border:1px solid rgba(141,155,171,.4);background:linear-gradient(160deg,rgba(24,40,66,.95),rgba(10,18,32,.95));padding:6px 9px;font-size:11px;line-height:1.35;cursor:grab;touch-action:none;animation:bob 5s ease-in-out infinite;user-select:none}
+.rec b{font:600 12px ui-monospace,monospace;color:var(--cy);display:block}
+.rec em{font-style:normal;color:var(--ti);font-family:ui-monospace,monospace;font-size:10px}
+.rec.sel{border-color:var(--acc);box-shadow:0 0 12px rgba(98,227,255,.35)}
+.rec .pf{position:absolute;right:4px;top:4px;font:700 8px ui-monospace,monospace;color:var(--am);border:1px solid var(--am);padding:0 3px}
+@keyframes bob{50%{transform:translateY(-3px)}}
+#intake{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:9px;min-height:120px}
+.zone{border:1px dashed rgba(141,155,171,.5);padding:8px 10px;min-height:92px;margin-bottom:10px;transition:border-color .2s,background .2s;position:relative}
+.zone.hot{border-color:var(--acc);background:rgba(98,227,255,.08)}
+.zone.flash{animation:zf .7s}
+@keyframes zf{0%,60%{background:rgba(255,93,98,.25);border-color:var(--co)}}
+.zone h4{margin:0 0 6px;font-size:10px;letter-spacing:.18em;color:var(--ti);text-transform:uppercase;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{background:rgba(98,227,255,.1);border:1px solid rgba(98,227,255,.35);font:10px ui-monospace,monospace;padding:1px 6px;cursor:pointer}
+.chip:hover{border-color:var(--co)}
+.zone.bin .chip{background:rgba(255,93,98,.1);border-color:rgba(255,93,98,.4)}
+.ghost{position:fixed;pointer-events:none;z-index:70;opacity:.92;width:130px}
+.hbar{display:grid;grid-template-columns:104px 1fr 46px;align-items:center;gap:8px;margin:5px 0;font-size:12px}
+.hbar .t{height:10px;background:rgba(141,155,171,.15);position:relative}
+.hbar .t i{position:absolute;left:0;top:0;bottom:0;width:100%;display:block;transform-origin:left;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+.item{cursor:pointer;border:1px solid transparent;padding:4px 6px;transition:border-color .2s,background .2s}
+.item:hover{background:rgba(98,227,255,.05)}.item.sel{border-color:var(--acc);background:rgba(98,227,255,.1)}
+.item .nm{display:flex;justify-content:space-between;font-size:12px}
+.item .nm b{font:600 12px ui-monospace,monospace}
+.mx{display:grid;grid-template-columns:auto 1fr 1fr;gap:3px;font:12px ui-monospace,monospace;text-align:center}
+.mx div{padding:6px 4px;border:1px solid rgba(141,155,171,.25)}
+.mx .hd{border:0;color:var(--ti);font-size:9px;letter-spacing:.12em;text-transform:uppercase}
+.mx .tp{background:rgba(255,93,98,.16)}.mx .tn{background:rgba(63,224,160,.12)}.mx .fp{background:rgba(226,178,76,.14)}.mx .fn{background:rgba(154,123,255,.18)}
+.mx b{font-size:17px;display:block}
+.note{font-size:12px;color:var(--ti);line-height:1.5}
+.note b{color:var(--sil)}
+.debrief{position:absolute;inset:0;z-index:30;background:rgba(3,7,14,.9);display:flex;align-items:center;justify-content:center;animation:dfi .5s;overflow:hidden}
+@keyframes dfi{from{opacity:0}}
+.debrief .beam{position:absolute;left:0;right:0;height:90px;background:linear-gradient(180deg,transparent,rgba(98,227,255,.22),transparent);animation:bm 2.2s ease-in-out 1;top:-100px}
+@keyframes bm{to{top:110%}}
+.dbox{width:min(520px,92%);border:1px solid rgba(98,227,255,.45);padding:22px 26px;background:rgba(6,12,22,.9);position:relative}
+.dbox h3{margin:0 0 2px;font-size:11px;letter-spacing:.3em;color:var(--acc);font-weight:600}
+.dbox h2{margin:0 0 12px;font-size:20px;font-weight:600}
+.dsc{display:flex;align-items:baseline;gap:18px;margin-bottom:10px}
+.dsc .big{font:600 48px ui-monospace,Menlo,monospace;color:var(--sil)}
+.dsc .rk{font:700 34px ui-monospace,monospace;color:var(--em)}
+.dbox ul{list-style:none;margin:0 0 16px;padding:0;font-size:13px}
+.dbox li{padding:5px 0;border-bottom:1px solid rgba(141,155,171,.15);opacity:0;animation:fi .5s forwards}
+#doors{position:fixed;inset:0;z-index:90;pointer-events:none}
+.door{position:absolute;top:0;bottom:0;width:50.5%;background:repeating-linear-gradient(135deg,#0b1424 0 22px,#0e1a2e 22px 44px);transition:transform .6s cubic-bezier(.7,0,.3,1);border:0 solid var(--ti2)}
+.door.l{left:0;transform:translateX(-101%);border-right-width:3px}
+.door.r{right:0;transform:translateX(101%);border-left-width:3px}
+.door::after{content:"";position:absolute;top:0;bottom:0;width:6px;background:var(--acc);opacity:.7}
+.door.l::after{right:0}.door.r::after{left:0}
+#doors.closed{pointer-events:auto}
+#doors.closed .door{transform:none}
+#instr{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 60%,rgba(10,24,48,.85),rgba(2,4,10,.97));overflow-y:auto;overflow-x:hidden;padding:clamp(14px,3vw,34px);transition:opacity .9s,visibility 0s}
+#instr.gone{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .9s,visibility 0s .9s}
+#instrX{position:fixed;top:14px;right:14px;z-index:102;width:44px;height:44px;display:grid;place-items:center;background:rgba(6,12,22,.85);border:1px solid rgba(98,227,255,.55);color:var(--sil);transition:background .2s,border-color .2s,box-shadow .2s,color .2s}
+#instrX:hover,#instrX:focus-visible{background:rgba(255,93,98,.16);border-color:var(--co);color:#fff;box-shadow:0 0 16px rgba(255,93,98,.35) inset;outline:none}
+.ibox{max-width:940px;margin:0 auto;padding:6px 0 24px}
+.ihead{text-align:center;padding:14px 56px 6px}
+.ihead .sub{letter-spacing:.4em;font-size:11px;color:var(--ti);margin:0 0 8px}
+.ihead h1{margin:0;font-size:clamp(26px,5vw,50px);letter-spacing:.3em;font-weight:300}
+.ihead h1 b{font-weight:700;color:var(--cy)}
+.ihead p{max-width:620px;margin:16px auto 0;color:var(--ti);letter-spacing:.04em;line-height:1.6}
+.itag{display:flex;align-items:center;justify-content:center;gap:10px;margin:18px 0 16px;font-size:10px;letter-spacing:.3em;color:var(--acc)}
+.itag::before,.itag::after{content:"";height:1px;flex:1;max-width:160px;background:linear-gradient(90deg,transparent,rgba(98,227,255,.5))}
+.itag::after{transform:scaleX(-1)}
+.igrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.icard{position:relative;border:1px solid rgba(141,155,171,.26);background:rgba(6,12,22,.72);padding:14px 16px 14px 16px;clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.icard h3{display:flex;align-items:center;gap:10px;margin:0 0 8px;font-size:12px;letter-spacing:.2em;font-weight:600;color:var(--sil);text-transform:uppercase}
+.icard h3 svg{flex:none;color:var(--cy)}
+.icard p,.icard li{font-size:13px;color:var(--ti);line-height:1.55;margin:0}
+.icard ul{margin:0;padding:0;list-style:none}
+.icard li{padding:3px 0 3px 14px;position:relative}
+.icard li::before{content:"";position:absolute;left:0;top:11px;width:6px;height:1px;background:var(--cy)}
+.icard b{color:var(--sil);font-weight:600}
+.icard.wide{grid-column:1/-1}
+.rk4{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font:600 11px ui-monospace,monospace}
+.rk4 span{letter-spacing:.08em}
+.skgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px;margin-top:10px}
+.sk{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(141,155,171,.14);font-size:12px;color:var(--ti)}
+.sk i{font:600 10px ui-monospace,monospace;font-style:normal;color:var(--cy);min-width:18px}
+.sk span{color:var(--sil)}
+.ifoot{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:20px}
+.ifoot small{font-size:11px;color:var(--ti);opacity:.75;letter-spacing:.05em;text-align:center}
+.rbtn.locked{color:var(--ti2);opacity:.6;cursor:not-allowed}
+.rbtn.locked:hover{background:transparent;color:var(--ti2)}
+.rbtn .s svg{display:block;color:var(--ti2)}
+.gcomp{border:1px solid var(--em);background:rgba(63,224,160,.1);color:var(--em);padding:8px 12px;margin:0 0 14px;font:600 11px ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;line-height:1.5}
+@media (max-width:700px){.igrid,.skgrid{grid-template-columns:minmax(0,1fr)}.ihead{padding:30px 8px 4px}#instrX{top:10px;right:10px}}
+.hubwrap{position:relative}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--ti);margin-top:6px}
+.legend i{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:-1px}
+.pill{display:inline-block;font:600 10px ui-monospace,monospace;padding:1px 7px;border:1px solid currentColor;letter-spacing:.1em}
+@media (max-width:1100px){#app{grid-template-columns:minmax(0,1fr);grid-template-rows:46px 54px minmax(0,1fr) 150px;grid-template-areas:"top" "rail" "stage" "comms"}
+ #rail{flex-direction:row;align-items:center;padding:6px 10px}.rh{display:none}.rbtn{flex:0 0 auto;border-left:0;border-bottom:2px solid rgba(141,155,171,.3)}.rbtn .t{display:none}
+ .brand span,.integ label,#clock{display:none}#msg{min-height:0;font-size:12px}#log{display:none}.bar{width:60px}}
+@media (prefers-reduced-motion:reduce){.rec{animation:none}.door{transition:none}.sig i{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="app">
+ <header id="top" class="panel">
+  <div class="brand"><b>AEGIS STATION</b><span>BIOLOGICAL CONTAINMENT PROTOCOL</span></div>
+  <div id="loc"><i id="locN">Central Command</i><span id="locW">Command Deck</span></div>
+  <div class="integ"><label>STATION INTEGRITY</label><div class="bar"><i id="integBar"></i></div><b id="integVal">100</b></div>
+  <div id="clock">D14 06:42</div>
+  <div class="audio"><button id="helpBtn" aria-label="How to play" title="How to play" style="font-weight:700">?</button><button id="muteBtn" aria-label="Mute audio" title="Mute / unmute"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path id="wave" d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11"/></svg></button><input id="vol" type="range" min="0" max="1" step="0.05" aria-label="Volume" style="width:70px"></div>
+ </header>
+ <nav id="rail" class="panel" aria-label="Station decks"></nav>
+ <main id="stage" class="panel"><div id="room" style="position:relative;min-height:100%"></div></main>
+ <aside id="comms" class="panel">
+  <div class="ch"><span>INCOMING TRANSMISSION</span><span class="sig"><i></i><i></i><i></i><i></i></span></div>
+  <div class="from" id="from">AEGIS — STATION INTELLIGENCE</div>
+  <div id="msg"></div>
+  <button id="hintBtn">REQUEST INTEL</button>
+  <div id="log" aria-live="polite"></div>
+ </aside>
+</div>
+<div id="doors"><div class="door l"></div><div class="door r"></div></div>
+<div id="instr" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+ <button id="instrX" aria-label="Close instructions and enter Central Command" title="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+ <div class="ibox">
+  <div class="ihead">
+   <div class="sub">AEGIS STATION · BIOLOGICAL CONTAINMENT PROTOCOL</div>
+   <h1 id="instrTitle">OUTBREAK <b>ANALYST</b></h1>
+   <p>An unknown pathogen is moving through the orbital research station. You are the Chief Scientific Officer. Clean the records, read the evidence, test the treatment, forecast the wards, and contain the outbreak — with data.</p>
+  </div>
+  <div class="itag">HOW TO PLAY</div>
+  <div class="igrid">
+   <section class="icard"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>Objective</h3>
+    <p>Contain the outbreak aboard Aegis Station. Each mission puts a real data-analysis problem in front of you. Make the best decision you can with the evidence, and file your result to Command.</p></section>
+   <section class="icard"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Mission order</h3>
+    <p>Missions must be completed <b>strictly in order, from 1 to 10</b>. Only Mission 1 is open at the start. A mission stays <b>locked</b> (shown with a padlock) until the one before it has been completed. Completing Mission 10 completes the game.</p></section>
+   <section class="icard"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Completion &amp; scoring</h3>
+    <p>A mission is completed when you submit your final decision and receive its debrief. Each debrief gives a <b>score from 0 to 100</b> and a rank. Replaying a mission keeps your <b>best</b> score. Your <b>average score</b> is taken over the missions you have completed this session.</p>
+    <div class="rk4"><span style="color:var(--em)">S · 90+</span><span style="color:var(--cy)">A · 75+</span><span style="color:var(--am)">B · 55+</span><span style="color:var(--co)">C · below 55</span></div></section>
+   <section class="icard"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l9 4v6c0 5-4 9-9 10-5-1-9-5-9-10V6z"/></svg>Station integrity</h3>
+    <p>Integrity starts at 100 and drops with every mission you file below a perfect score, so careful analysis keeps the station safe. Scores and progress last for the current session only: opening the game again starts a new run at Mission 1.</p></section>
+   <section class="icard wide"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>Navigating the game</h3>
+    <ul>
+     <li><b>Central Command</b> is your hub. Click an unlocked numbered node on the station ring, or use <b>Begin next mission</b>, to launch a mission.</li>
+     <li>The <b>Decks</b> list on the left jumps between Central Command and any unlocked mission. Locked missions show a padlock and will not open.</li>
+     <li><b>Request Intel</b> in the transmission panel gives a hint for the current room. The speaker control mutes sound or changes volume.</li>
+     <li>After each debrief you can retry the mission, return to Central Command, or move on to the next mission.</li>
+     <li>The <b>?</b> button in the top bar reopens these instructions at any time without affecting your progress.</li>
+    </ul></section>
+   <section class="icard wide"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3"/></svg>Ten missions, ten skills</h3>
+    <p>Every mission tests a different data-analysis or outbreak-management concept, from cleaning raw records to coordinating the final containment.</p>
+    <div class="skgrid" id="instrSkills"></div></section>
+  </div>
+  <div class="ifoot"><button class="btn pri" id="instrGo">Enter Central Command</button><small>Close this page with the X in the top-right corner, or press Esc.</small></div>
+ </div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   OUTBREAK ANALYST — AEGIS STATION
+   Single animation loop · procedural audio · 10 data-science missions
+   ===================================================================== */
+const $=(s,r=document)=>r.querySelector(s);
+const h=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const avg=a=>a.reduce((s,v)=>s+v,0)/(a.length||1);
+const median=a=>{const s=[...a].sort((x,y)=>x-y),n=s.length;return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):0;};
+const sd=a=>{const m=avg(a);return Math.sqrt(avg(a.map(v=>(v-m)*(v-m))));};
+function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(6.283185307*v);}
+function erf(x){const s=Math.sign(x);x=Math.abs(x);const t=1/(1+.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x);return s*y;}
+const ncdf=z=>.5*(1+erf(z/Math.SQRT2));
+const sig=z=>1/(1+Math.exp(-z));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
+/* Scores and mission progress are session-only. Any score data persisted by earlier versions is purged on every fresh load. */
+['aegis_best','aegis_scores','aegis_progress'].forEach(k=>{store.del(k);try{sessionStorage.removeItem(k);}catch(e){}});
+const FX={reduced:window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches};
+const S={room:'hub',best:{},done:0};  /* best[missionId] = best score this session; a filed score marks the mission completed */
+
+/* ---------------- single animation architecture ---------------- */
+const Anim={perm:new Set(),room:new Set(),tweens:[],last:0,hidden:false,
+ add(fn,room=true){(room?this.room:this.perm).add(fn);return fn;},
+ clearRoom(){this.room.clear();this.tweens.length=0;},
+ tween(dur,fn,done){const tw={t:0,dur:FX.reduced?.01:Math.max(.01,dur),fn,done};this.tweens.push(tw);return tw;},
+ loop(now){requestAnimationFrame(Anim.loop);
+  if(Anim.hidden){Anim.last=now;return;}
+  const dt=Math.min(.05,(now-Anim.last)/1000||.016);Anim.last=now;const t=now/1000;
+  Anim.perm.forEach(f=>f(dt,t));Anim.room.forEach(f=>f(dt,t));
+  for(let i=Anim.tweens.length-1;i>=0;i--){const tw=Anim.tweens[i];tw.t+=dt;const p=Math.min(1,tw.t/tw.dur);tw.fn(p);if(p>=1){Anim.tweens.splice(i,1);tw.done&&tw.done();}}
+ }};
+document.addEventListener('visibilitychange',()=>{Anim.hidden=document.hidden;if(Sfx.ctx){document.hidden?Sfx.ctx.suspend():Sfx.ctx.resume();}});
+function countTo(el,to,fmt,dur){fmt=fmt||(v=>v.toFixed(0));const from=el._v==null?to:el._v;el._v=to;el._id=(el._id||0)+1;const id=el._id;
+ Anim.tween(dur||.5,p=>{if(el._id!==id)return;el.textContent=fmt(lerp(from,to,ease(p)));});}
+function mkCanvas(parent,hpx,cls){const c=h('canvas',cls||'inst');c.style.height=hpx+'px';parent.appendChild(c);
+ const o={c,ctx:c.getContext('2d'),w:10,h:10,dirty:true};
+ const fit=()=>{const r=c.getBoundingClientRect();const d=Math.min(window.devicePixelRatio||1,2);o.w=Math.max(10,r.width);o.h=Math.max(10,r.height);c.width=Math.round(o.w*d);c.height=Math.round(o.h*d);o.ctx.setTransform(d,0,0,d,0,0);o.dirty=true;};
+ new ResizeObserver(fit).observe(c);return o;}
+
+/* ---------------- audio (Web Audio, no assets) ---------------- */
+const Sfx={ctx:null,m:null,muted:store.get('aegis_mute',false),vol:store.get('aegis_vol',.5),
+ init(){if(this.ctx){if(this.ctx.state==='suspended')this.ctx.resume();return;}
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;this.ctx=new AC();
+  this.m=this.ctx.createGain();this.m.gain.value=this.muted?0:this.vol;this.m.connect(this.ctx.destination);this.ambience();},
+ apply(){if(this.m)this.m.gain.setTargetAtTime(this.muted?0:this.vol,this.ctx.currentTime,.05);},
+ tone(f,d,type,vol,slide,delay){if(!this.ctx||this.muted)return;const t=this.ctx.currentTime+(delay||0);const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+  o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,f+slide),t+d);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol||.1,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(this.m);o.start(t);o.stop(t+d+.03);},
+ noiseBurst(d,f0,f1,vol){if(!this.ctx||this.muted)return;const c=this.ctx,t=c.currentTime;const n=c.createBufferSource();n.buffer=this.nb;
+  const bp=c.createBiquadFilter();bp.type='bandpass';bp.Q.value=2;bp.frequency.setValueAtTime(f0,t);bp.frequency.exponentialRampToValueAtTime(f1,t+d);
+  const g=c.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);n.connect(bp);bp.connect(g);g.connect(this.m);n.start(t);n.stop(t+d+.05);},
+ ambience(){const c=this.ctx;const len=c.sampleRate*2;const b=c.createBuffer(1,len,c.sampleRate);const d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;this.nb=b;
+  const n=c.createBufferSource();n.buffer=b;n.loop=true;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=360;const ng=c.createGain();ng.gain.value=.045;n.connect(lp);lp.connect(ng);ng.connect(this.m);n.start();
+  [[47,'sine',.05],[71,'triangle',.018],[142,'sine',.008]].forEach(([f,ty,v])=>{const o=c.createOscillator();o.type=ty;o.frequency.value=f;const g=c.createGain();g.gain.value=v;o.connect(g);g.connect(this.m);o.start();});
+  const lfo=c.createOscillator();lfo.frequency.value=.11;const lg=c.createGain();lg.gain.value=90;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
+  setInterval(()=>{if(!Anim.hidden&&Math.random()<.5)this.noiseBurst(.5,300,900,.012);},6500);},
+ tick(){this.tone(1400,.03,'square',.025);},
+ blip(){this.tone(740,.07,'triangle',.06);},
+ sel(){this.tone(520,.08,'sine',.07);this.tone(780,.09,'sine',.06,0,.06);},
+ door(){this.noiseBurst(.55,160,1100,.09);this.tone(70,.4,'sine',.14,-30);},
+ scan(){this.tone(300,.9,'sine',.05,900);},
+ chime(){this.tone(880,.25,'sine',.08);this.tone(1320,.35,'sine',.07,0,.09);},
+ warn(){this.tone(330,.16,'sawtooth',.06);this.tone(250,.2,'sawtooth',.06,0,.17);},
+ alarm(){for(let i=0;i<3;i++){this.tone(520,.18,'square',.05,0,i*.3);this.tone(390,.18,'square',.05,0,i*.3+.15);}},
+ comm(){this.tone(1000,.06,'sine',.05);this.tone(1250,.06,'sine',.05,0,.1);this.tone(1000,.08,'sine',.05,0,.2);},
+ done(){[523,659,784,1046].forEach((f,i)=>this.tone(f,.4,'sine',.08,0,i*.12));}};
+function syncAudioUI(){$('#muteBtn').classList.toggle('off',Sfx.muted);$('#wave').style.display=Sfx.muted?'none':'';$('#vol').value=Sfx.vol;}
+$('#muteBtn').onclick=()=>{Sfx.init();Sfx.muted=!Sfx.muted;store.set('aegis_mute',Sfx.muted);Sfx.apply();syncAudioUI();};
+$('#vol').oninput=e=>{Sfx.init();Sfx.vol=+e.target.value;store.set('aegis_vol',Sfx.vol);Sfx.apply();};
+syncAudioUI();
+
+/* ---------------- station clock ---------------- */
+const Clock={t:14*86400+6*3600+42*60,mult:1,lm:-1};
+Anim.add(dt=>{Clock.t+=dt*60*Clock.mult;const m=Math.floor(Clock.t/60);if(m!==Clock.lm){Clock.lm=m;const d=Math.floor(Clock.t/86400),hh=Math.floor(Clock.t/3600)%24,mm=m%60;
+ $('#clock').textContent='D'+d+' '+String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');}},false);
+
+/* ---------------- environment renderer (background canvas) ---------------- */
+function walls(x,w,hh,A,ribs){let g=x.createLinearGradient(0,0,0,hh*.1);g.addColorStop(0,'#03060c');g.addColorStop(1,'rgba(10,18,32,.92)');x.fillStyle=g;x.fillRect(0,0,w,hh*.1);
+ g=x.createLinearGradient(0,hh*.86,0,hh);g.addColorStop(0,'rgba(8,15,27,.92)');g.addColorStop(1,'#03060b');x.fillStyle=g;x.fillRect(0,hh*.86,w,hh*.14);
+ x.fillStyle=A;x.globalAlpha=.5;x.fillRect(0,hh*.1-1,w,1.5);x.fillRect(0,hh*.86,w,1.5);x.globalAlpha=1;
+ for(let i=0;i<=ribs;i++){const px=w*i/ribs;x.fillStyle='rgba(14,24,40,.94)';x.fillRect(px-7,hh*.1,14,hh*.76);x.fillStyle='rgba(141,155,171,.22)';x.fillRect(px-7,hh*.1,2,hh*.76);}}
+function hex(x,cx,cy,r){x.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3;x[i?'lineTo':'moveTo'](cx+r*Math.cos(a),cy+r*Math.sin(a));}x.closePath();}
+const STYLES={
+ command(x,w,hh,t,A){walls(x,w,hh,A,5);x.fillStyle='#09111f';x.strokeStyle=A;x.globalAlpha=.9;x.beginPath();x.ellipse(w*.5,hh*1.0,w*.46,hh*.15,0,Math.PI,0);x.fill();x.globalAlpha=.4;x.stroke();x.globalAlpha=1;
+  for(let i=0;i<44;i++){const a=Math.PI+(i/43)*Math.PI;const px=w*.5+Math.cos(a)*w*.44,py=hh+Math.sin(a)*hh*.14;x.fillStyle=Math.sin(t*2+i*.7)>.3?A:'#1b2a42';x.fillRect(px-1.5,py-1.5,3,3);}
+  x.strokeStyle=A;x.lineWidth=1.2;for(let k=0;k<3;k++){const r=w*(.07+k*.035),a0=t*(.5+k*.25)*(k%2?-1:1);x.globalAlpha=.55-k*.12;x.beginPath();x.ellipse(w*.5,hh*.8,r,r*.22,0,a0,a0+3.6);x.stroke();}x.globalAlpha=1;},
+ archive(x,w,hh,t,A){walls(x,w,hh,A,3);for(const side of [0,1]){const bx=side?w*.88:0,bw=w*.12;x.fillStyle='rgba(8,15,28,.92)';x.fillRect(bx,hh*.1,bw,hh*.76);
+   for(let r=0;r<11;r++)for(let c=0;c<2;c++){const dx=bx+8+c*(bw/2-4),dy=hh*.1+8+r*(hh*.76-10)/11;x.strokeStyle='rgba(141,155,171,.3)';x.strokeRect(dx,dy,bw/2-12,(hh*.76)/11-10);
+   const on=Math.sin(t*1.5+r*1.7+c*2.9+side)>.55;x.fillStyle=on?A:'#1b2a42';x.fillRect(dx+4,dy+4,4,2);}}
+  x.fillStyle='rgba(98,227,255,.12)';x.fillRect(0,hh*.905,w,3);for(let i=0;i<30;i++){const px=((i*70+t*38)%(w+70))-35;x.fillStyle='rgba(141,155,171,.3)';x.fillRect(px,hh*.905,3,3);}
+  const rx=((t*55)%(w+100))-50;x.fillStyle='rgba(228,235,242,.65)';x.fillRect(rx,hh*.88,22,16);x.fillStyle=A;x.fillRect(rx+3,hh*.88+4,12,1.5);x.fillRect(rx+3,hh*.88+8,8,1.5);},
+ calib(x,w,hh,t,A){walls(x,w,hh,A,4);const px=w*.5,py=hh*.1;const a1=Math.sin(t*.6)*.55,a2=Math.sin(t*.9+1)*.8;const l1=hh*.19,l2=hh*.17;
+  const j1x=px+Math.sin(a1)*l1,j1y=py+Math.cos(a1)*l1,j2x=j1x+Math.sin(a1+a2)*l2,j2y=j1y+Math.cos(a1+a2)*l2;
+  x.strokeStyle='#5d6b7c';x.lineWidth=7;x.lineCap='round';x.beginPath();x.moveTo(px,py);x.lineTo(j1x,j1y);x.lineTo(j2x,j2y);x.stroke();x.lineWidth=2;x.strokeStyle=A;x.stroke();
+  const g=x.createRadialGradient(j2x,j2y,2,j2x,j2y,hh*.14);g.addColorStop(0,'rgba(226,178,76,.55)');g.addColorStop(1,'rgba(226,178,76,0)');x.fillStyle=g;x.fillRect(j2x-hh*.14,j2y-hh*.14,hh*.28,hh*.28);
+  for(let i=0;i<14;i++){const tx=w*(.08+i*.063);x.fillStyle='rgba(20,34,56,.95)';x.fillRect(tx,hh*.8,9,hh*.06);const lv=.4+.35*Math.sin(t*.8+i);x.fillStyle=i%3?A:'#ff5d62';x.globalAlpha=.7;x.fillRect(tx+2,hh*.86-hh*.055*lv,5,hh*.055*lv);x.globalAlpha=1;}},
+ surveil(x,w,hh,t,A){walls(x,w,hh,A,4);for(const side of [0,1]){const bx=side?w*.86:w*.01;for(let r=0;r<4;r++)for(let c=0;c<2;c++){const sx=bx+c*w*.065,sy=hh*.13+r*hh*.18;x.fillStyle='#050c18';x.fillRect(sx,sy,w*.058,hh*.15);x.strokeStyle='rgba(141,155,171,.35)';x.strokeRect(sx,sy,w*.058,hh*.15);
+   const ly=sy+((t*30+r*13+c*7+side*5)%(hh*.15));x.fillStyle=A;x.globalAlpha=.4;x.fillRect(sx+1,ly,w*.058-2,1.5);x.globalAlpha=1;}}
+  const cx=w*.5,cy=hh*.32,R=hh*.2;x.strokeStyle=A;x.globalAlpha=.3;for(let k=1;k<=3;k++){x.beginPath();x.arc(cx,cy,R*k/3,0,6.283);x.stroke();}x.beginPath();x.moveTo(cx-R,cy);x.lineTo(cx+R,cy);x.moveTo(cx,cy-R);x.lineTo(cx,cy+R);x.stroke();
+  const a=t*1.2;const g=x.createConicGradient?x.createConicGradient(a,cx,cy):null;if(g){g.addColorStop(0,'rgba(98,227,255,.30)');g.addColorStop(.14,'rgba(98,227,255,0)');g.addColorStop(1,'rgba(98,227,255,0)');x.globalAlpha=1;x.fillStyle=g;x.beginPath();x.arc(cx,cy,R,0,6.283);x.fill();}x.globalAlpha=1;},
+ decks(x,w,hh,t,A){walls(x,w,hh,A,3);for(let k=0;k<3;k++){const y=hh*(.56+k*.1);x.fillStyle='rgba(10,20,36,.78)';x.strokeStyle=A;x.globalAlpha=.9;x.beginPath();x.moveTo(w*.12,y);x.lineTo(w*.88,y);x.lineTo(w*.96,y+hh*.045);x.lineTo(w*.04,y+hh*.045);x.closePath();x.fill();x.globalAlpha=.35;x.stroke();x.globalAlpha=1;
+   for(let i=0;i<9;i++){const px=((i*w*.11+t*(20+k*8))%(w*.84))+w*.08;x.fillStyle=i%2?A:'#e4ebf2';x.globalAlpha=.6;x.fillRect(px,y+hh*.02,3,3);x.globalAlpha=1;}}
+  for(const fx of [w*.07,w*.93]){const sp=t*(fx<w/2?5:(Math.sin(t*.6)>.3?0.4:5));x.strokeStyle='#0c1626';x.lineWidth=3;x.beginPath();x.arc(fx,hh*.32,hh*.09,0,6.283);x.stroke();x.strokeStyle=A;x.globalAlpha=.55;x.lineWidth=5;for(let b=0;b<4;b++){const a=sp+b*Math.PI/2;x.beginPath();x.moveTo(fx,hh*.32);x.lineTo(fx+Math.cos(a)*hh*.08,hh*.32+Math.sin(a)*hh*.08);x.stroke();}x.globalAlpha=1;}},
+ dock(x,w,hh,t,A){walls(x,w,hh,A,2);x.strokeStyle=A;x.lineWidth=1.5;for(let i=0;i<10;i++){const k=((i/10+t*.12)%1),y=hh*(.87+k*.13),sp=w*(.06+k*.2);x.globalAlpha=(1-k)*.7;x.beginPath();x.moveTo(w*.5-sp,y+8);x.lineTo(w*.5,y);x.lineTo(w*.5+sp,y+8);x.stroke();}x.globalAlpha=1;
+  x.strokeStyle='rgba(141,155,171,.55)';x.lineWidth=10;x.beginPath();x.arc(w*.5,hh*.86,hh*.46,Math.PI,0);x.stroke();x.strokeStyle=A;x.lineWidth=2;x.stroke();
+  const bx=w*.5+Math.sin(t*.8)*hh*.42;const g=x.createLinearGradient(bx-14,0,bx+14,0);g.addColorStop(0,'rgba(98,227,255,0)');g.addColorStop(.5,'rgba(98,227,255,.35)');g.addColorStop(1,'rgba(98,227,255,0)');x.fillStyle=g;x.fillRect(bx-14,hh*.4,28,hh*.46);
+  const sx=((t*28)%(w*1.3))-w*.15;x.fillStyle='rgba(30,44,66,.95)';x.beginPath();x.moveTo(sx,hh*.28);x.lineTo(sx+70,hh*.26);x.lineTo(sx+92,hh*.285);x.lineTo(sx+70,hh*.31);x.lineTo(sx,hh*.3);x.closePath();x.fill();x.fillStyle=Math.sin(t*5)>0?'#ff5d62':'#3fe0a0';x.fillRect(sx+86,hh*.283,3,3);},
+ grid(x,w,hh,t,A){walls(x,w,hh,A,4);const r=hh*.038;let n=0;for(const side of [0,1])for(let row=0;row<14;row++)for(let col=0;col<5;col++){const cx=(side?w*.84:w*.02)+col*r*1.8+(row%2)*r*.9,cy=hh*.14+row*r*1.55;
+   hex(x,cx,cy,r*.92);x.strokeStyle='rgba(141,155,171,.22)';x.stroke();n++;const v=Math.sin(t*.9+n*.7);if(v>.82){x.fillStyle=A;x.globalAlpha=(v-.82)*3;x.fill();x.globalAlpha=1;}}
+  x.strokeStyle=A;x.globalAlpha=.5;x.lineWidth=1.5;const cx=w*.5,cy=hh*.34;for(let k=0;k<2;k++){x.beginPath();x.arc(cx,cy,hh*(.16+k*.05),t*(.4+k*.2),t*(.4+k*.2)+2.4);x.stroke();}x.globalAlpha=1;},
+ clinical(x,w,hh,t,A){walls(x,w,hh,A,4);x.fillStyle='rgba(60,76,98,.9)';x.fillRect(0,hh*.1,w,5);const cx=w*(.5+.38*Math.sin(t*.35));x.fillStyle='#8d9bab';x.fillRect(cx-10,hh*.1,20,10);x.strokeStyle='#8d9bab';x.lineWidth=2;const dy=hh*(.2+.12*(.5+.5*Math.sin(t*.7)));x.beginPath();x.moveTo(cx,hh*.1+10);x.lineTo(cx,dy);x.stroke();x.fillStyle=A;x.fillRect(cx-6,dy,12,4);
+  const cols=[A,'#9a7bff','#3fe0a0','#e2b24c'];for(let i=0;i<16;i++){const tx=w*(.05+i*.057);x.strokeStyle='rgba(180,200,220,.5)';x.strokeRect(tx,hh*.74,12,hh*.12);const lv=.45+.3*Math.sin(t*.9+i*.8);x.fillStyle=cols[i%4];x.globalAlpha=.55;x.fillRect(tx+1,hh*.86-hh*.12*lv,10,hh*.12*lv);x.globalAlpha=1;}},
+ predict(x,w,hh,t,A){walls(x,w,hh,A,3);x.strokeStyle=A;x.globalAlpha=.3;x.lineWidth=1;const y0=hh*.6,y1=hh*.86;for(let i=0;i<=16;i++){const k=i/16;x.beginPath();x.moveTo(w*.5+(k-.5)*w*.2,y0);x.lineTo(w*.5+(k-.5)*w*1.3,y1);x.stroke();}for(let j=0;j<=6;j++){const k=Math.pow(j/6,1.6);const yy=lerp(y0,y1,k);const half=lerp(w*.1,w*.65,k);x.beginPath();x.moveTo(w*.5-half,yy);x.lineTo(w*.5+half,yy);x.stroke();}x.globalAlpha=1;
+  for(let i=0;i<22;i++){const px=w*(.1+((i*37)%80)/100),py=hh*(.45+((i*53)%30)/100)+Math.sin(t+i)*6;x.fillStyle=i%5?A:'#e2b24c';x.globalAlpha=.7;x.fillRect(px,py,3,3);x.globalAlpha=1;}
+  x.strokeStyle=A;x.globalAlpha=.45;x.lineWidth=1.5;x.beginPath();x.ellipse(w*.5,hh*.32,hh*.24,hh*.06,.2,t*.5,t*.5+4.2);x.stroke();x.globalAlpha=1;},
+ security(x,w,hh,t,A){walls(x,w,hh,A,3);for(const y of [hh*.1,hh*.86-9]){x.save();x.beginPath();x.rect(0,y,w,9);x.clip();x.fillStyle='rgba(226,178,76,.38)';for(let i=-2;i<w/16+2;i++){const o=(i*16+(t*30)%16);x.beginPath();x.moveTo(o,y+9);x.lineTo(o+8,y+9);x.lineTo(o+17,y);x.lineTo(o+9,y);x.closePath();x.fill();}x.restore();}
+  for(const side of [0,1])for(let i=0;i<6;i++){x.fillStyle='rgba(20,32,52,.95)';x.fillRect((side?w*.92:0)+i*w*.013,hh*.2,w*.009,hh*.6);}
+  const sx=w*(.5+.4*Math.sin(t*.5));const g=x.createRadialGradient(sx,hh*.1,2,sx,hh*.1,hh*.5);g.addColorStop(0,'rgba(255,93,98,.22)');g.addColorStop(1,'rgba(255,93,98,0)');x.fillStyle=g;x.fillRect(0,hh*.1,w,hh*.76);},
+ station(x,w,hh,t,A){walls(x,w,hh,A,3);const cx=w*.5,cy=hh*.4,R=hh*.26;x.lineWidth=11;for(let i=0;i<24;i++){const a=t*.12+i/24*6.283,a2=a+6.283/24*.85;const bad=(i%24===3||i%24===4);x.strokeStyle=bad?'rgba(255,93,98,'+(.45+.3*Math.sin(t*3))+')':'rgba(110,128,150,.7)';x.beginPath();x.ellipse(cx,cy,R*1.5,R*.45,.1,a,a2);x.stroke();}
+  x.lineWidth=1;x.strokeStyle='rgba(141,155,171,.35)';for(let i=0;i<6;i++){const a=t*.12+i*1.047;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a)*R*1.5,cy+Math.sin(a)*R*.45);x.stroke();}x.fillStyle='#1b2a42';x.beginPath();x.arc(cx,cy,R*.22,0,6.283);x.fill();x.strokeStyle=A;x.stroke();
+  x.fillStyle=Math.sin(t*4)>0?'#ff5d62':'#2a1214';x.fillRect(cx-2,cy-R*.22-6,4,4);}
+};
+const BG={c:$('#bg'),w:0,h:0,style:'command',acc:'#62e3ff',stars:[],dust:[],bio:[],ships:[],shipT:5,skip:0,dirty:true,bioCol:'62,224,160',
+ init(){this.x=this.c.getContext('2d');const r=rng(7);for(let i=0;i<150;i++)this.stars.push({x:r(),y:r(),z:.15+r()*.85,p:r()*6.28});for(let i=0;i<46;i++)this.dust.push({x:r(),y:r(),z:.3+r()*.7,p:r()*6.28});for(let i=0;i<28;i++)this.bio.push({x:r(),y:r(),z:.3+r()*.7,p:r()*6.28,s:2+r()*3});this.resize();addEventListener('resize',()=>this.resize());Anim.add((dt,t)=>this.frame(dt,t),false);},
+ resize(){const d=Math.min(window.devicePixelRatio||1,1.5);this.w=innerWidth;this.h=innerHeight;this.c.width=this.w*d;this.c.height=this.h*d;this.x.setTransform(d,0,0,d,0,0);this.dirty=true;},
+ set(style,acc,bio){this.style=style;this.acc=acc;this.bioCol=bio||'62,224,160';this.dirty=true;},
+ frame(dt,t){let sp=1;if(FX.reduced){this.skip+=dt;if(this.skip<.3&&!this.dirty)return;dt=this.skip;this.skip=0;sp=.12;}this.dirty=false;
+  const x=this.x,w=this.w,hh=this.h,tt=t*sp;
+  let g=x.createLinearGradient(0,0,0,hh);g.addColorStop(0,'#02040b');g.addColorStop(.6,'#060d1c');g.addColorStop(1,'#0a1830');x.fillStyle=g;x.fillRect(0,0,w,hh);
+  for(const s of this.stars){s.x-=dt*.004*s.z*sp;if(s.x<0)s.x+=1;x.globalAlpha=.3+.35*Math.sin(tt*1.3+s.p);x.fillStyle='#cfe4ff';x.fillRect(s.x*w,s.y*hh*.9,s.z*1.7,s.z*1.7);}x.globalAlpha=1;
+  // planet with atmosphere
+  const pr=hh*.66,px=w*.84,py=hh*1.0;g=x.createRadialGradient(px-pr*.35,py-pr*.5,pr*.1,px,py,pr);g.addColorStop(0,'#2a6a8c');g.addColorStop(.55,'#123a58');g.addColorStop(1,'#050f1e');x.fillStyle=g;x.beginPath();x.arc(px,py,pr,0,6.283);x.fill();
+  x.save();x.beginPath();x.arc(px,py,pr,0,6.283);x.clip();x.strokeStyle='rgba(180,220,255,.07)';x.lineWidth=7;for(let i=0;i<6;i++){const o=((tt*6+i*70)%420)-210;x.beginPath();x.ellipse(px+o*.3,py-pr*.55+i*pr*.2,pr*.9,pr*.12,-.12,0,6.283);x.stroke();}x.restore();
+  x.strokeStyle='rgba(98,227,255,.28)';x.lineWidth=5;x.beginPath();x.arc(px,py,pr+3,Math.PI*1.05,Math.PI*1.75);x.stroke();
+  // distant orbital ring structure
+  const ox=w*.16,oy=hh*.24,or=hh*.075;x.strokeStyle='rgba(141,155,171,.5)';x.lineWidth=1.5;x.beginPath();x.arc(ox,oy,or,0,6.283);x.stroke();for(let i=0;i<12;i++){const a=i*.5236+tt*.15;x.beginPath();x.moveTo(ox+Math.cos(a)*or,oy+Math.sin(a)*or);x.lineTo(ox+Math.cos(a)*or*1.18,oy+Math.sin(a)*or*1.18);x.stroke();}
+  x.fillStyle='#cdd8e4';x.fillRect(ox+Math.cos(tt*.15*2)*or-3,oy+Math.sin(tt*.15*2)*or-2,6,4);
+  // ships
+  this.shipT-=dt;if(this.shipT<=0&&this.ships.length<2){this.ships.push({x:-.05,y:.12+Math.random()*.32,v:.012+Math.random()*.02,s:.8+Math.random()*.8});this.shipT=14+Math.random()*10;}
+  for(let i=this.ships.length-1;i>=0;i--){const s=this.ships[i];s.x+=s.v*dt*sp;if(s.x>1.1){this.ships.splice(i,1);continue;}const sx=s.x*w,sy=s.y*hh,k=s.s;x.fillStyle='#8d9bab';x.beginPath();x.moveTo(sx,sy);x.lineTo(sx-14*k,sy-3*k);x.lineTo(sx-14*k,sy+3*k);x.closePath();x.fill();x.fillStyle=Math.sin(tt*6)>0?'#ff5d62':'#2a1214';x.fillRect(sx-15*k,sy-1,2,2);}
+  (STYLES[this.style]||STYLES.command)(x,w,hh,tt,this.acc);
+  // dust & biological particles
+  x.fillStyle='rgba(220,235,255,.28)';for(const d of this.dust){d.x+=(Math.sin(tt*.2+d.p)*.002)*dt*10*sp;d.y-=dt*.006*d.z*sp;if(d.y<0)d.y=1;if(d.x<0)d.x=1;if(d.x>1)d.x=0;x.fillRect(d.x*w,d.y*hh,1.3,1.3);}
+  for(const b of this.bio){b.x+=Math.sin(tt*.4+b.p)*.0016*dt*30*sp;b.y+=Math.cos(tt*.3+b.p*2)*.0012*dt*30*sp;if(b.y<0)b.y=1;if(b.y>1)b.y=0;if(b.x<0)b.x=1;if(b.x>1)b.x=0;const px2=b.x*w,py2=b.y*hh;x.fillStyle='rgba('+this.bioCol+','+(.18+.12*Math.sin(tt+b.p))+')';x.beginPath();x.arc(px2,py2,b.s*b.z,0,6.283);x.fill();x.strokeStyle='rgba('+this.bioCol+',.18)';x.beginPath();x.arc(px2,py2,b.s*b.z*1.9,0,6.283);x.stroke();}
+  // window reflection
+  const rx=((tt*40)%(w*1.8))-w*.4;x.save();x.globalAlpha=.045;x.fillStyle='#fff';x.beginPath();x.moveTo(rx,0);x.lineTo(rx+110,0);x.lineTo(rx-40,hh);x.lineTo(rx-150,hh);x.closePath();x.fill();x.restore();
+  g=x.createRadialGradient(w/2,hh/2,hh*.35,w/2,hh/2,hh*.95);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.45)');x.fillStyle=g;x.fillRect(0,0,w,hh);
+ }};
+
+/* ---------------- UI components ---------------- */
+function Dial(o){const wrap=h('div','dialwrap');let val=o.val;let ticks='';
+ for(let i=0;i<=10;i++){const a=(-135+27*i)*Math.PI/180;ticks+='<line x1="'+(41*Math.sin(a)).toFixed(1)+'" y1="'+(-41*Math.cos(a)).toFixed(1)+'" x2="'+(46*Math.sin(a)).toFixed(1)+'" y2="'+(-46*Math.cos(a)).toFixed(1)+'"/>';}
+ wrap.innerHTML='<div class="dial" tabindex="0" role="slider" aria-label="'+o.label+'"><svg viewBox="-52 -52 104 104"><circle r="38" class="dbg"/><g class="dt">'+ticks+'</g><path class="darc"/><g class="dn"><line x1="0" y1="-10" x2="0" y2="-31"/></g><circle r="9" class="dcap"/></svg></div><div class="dl">'+o.label+'</div><div class="dv"></div>';
+ const dial=wrap.firstChild,arc=$('.darc',wrap),nd=$('.dn',wrap),dv=$('.dv',wrap);
+ const pt=d=>[36*Math.sin(d*Math.PI/180),-36*Math.cos(d*Math.PI/180)];
+ function paint(){const f=(val-o.min)/(o.max-o.min);const a=-135+270*f;nd.setAttribute('transform','rotate('+a+')');const s=pt(-135),e=pt(a);arc.setAttribute('d','M'+s[0]+' '+s[1]+'A36 36 0 '+(a+135>180?1:0)+' 1 '+e[0]+' '+e[1]);dv.textContent=o.fmt?o.fmt(val):val;dial.setAttribute('aria-valuenow',val);}
+ function set(v,silent){v=clamp(Math.round(v/o.step)*o.step,o.min,o.max);v=+v.toFixed(4);if(v===val)return;val=v;paint();if(!silent){Sfx.tick();o.onChange&&o.onChange(val);}}
+ let drag=false;
+ function fromPt(e){const r=dial.getBoundingClientRect();const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);let a=Math.atan2(dx,-dy)*180/Math.PI;if(a>135)a=135;if(a<-135)a=-135;set(o.min+(a+135)/270*(o.max-o.min));}
+ dial.addEventListener('pointerdown',e=>{drag=true;dial.setPointerCapture(e.pointerId);fromPt(e);});
+ dial.addEventListener('pointermove',e=>{if(drag)fromPt(e);});
+ dial.addEventListener('pointerup',()=>drag=false);dial.addEventListener('pointercancel',()=>drag=false);
+ dial.addEventListener('keydown',e=>{const k={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[e.key];if(k){e.preventDefault();set(val+k*o.step*(e.shiftKey?5:1));}});
+ dial.addEventListener('wheel',e=>{e.preventDefault();set(val+(e.deltaY<0?1:-1)*o.step);},{passive:false});
+ paint();return{el:wrap,get:()=>val,set};}
+function Slider(o){const w=h('label','slider');w.innerHTML='<span class="sl">'+o.label+'</span><b class="sv"></b><input type="range" min="'+o.min+'" max="'+o.max+'" step="'+o.step+'" value="'+o.val+'">';
+ const inp=$('input',w),sv=$('.sv',w);const upd=()=>{sv.textContent=o.fmt?o.fmt(+inp.value):inp.value;inp.style.setProperty('--f',((inp.value-o.min)/(o.max-o.min)*100)+'%');};
+ inp.addEventListener('input',()=>{upd();Sfx.tick();o.onInput&&o.onInput(+inp.value);});upd();return{el:w,inp,set(v){inp.value=v;upd();},get:()=>+inp.value};}
+function Seg(opts,val,cb){const d=h('div','seg');const bs=opts.map(([v,l])=>{const b=h('button',v===val?'on':'',l);b.type='button';b.onclick=()=>{bs.forEach(x=>x.classList.remove('on'));b.classList.add('on');Sfx.sel();cb(v);};d.appendChild(b);return b;});return d;}
+function Toggle(label,val,cb){const b=h('button','tg'+(val?' on':''),'<span class="sw"></span><span>'+label+'</span>');b.type='button';b.onclick=()=>{const on=!b.classList.contains('on');b.classList.toggle('on',on);Sfx.sel();cb(on);};return b;}
+function Box(title,right){const b=h('div','box');b.innerHTML='<div class="ph"><span>'+title+'</span>'+(right?'<b>'+right+'</b>':'')+'</div>';return b;}
+function Ctl(label,el){const c=h('div','ctl');c.appendChild(h('label','',label));c.appendChild(el);return c;}
+function Kv(items){const d=h('div','kv');const els={};items.forEach(([k,l,c])=>{const w=h('div','','<small>'+l+'</small>');const b=h('b',c||'','–');w.appendChild(b);d.appendChild(w);els[k]=b;});return{el:d,els};}
+function drawChamfer(x,px,py,w,hh,c){x.beginPath();x.moveTo(px+c,py);x.lineTo(px+w,py);x.lineTo(px+w,py+hh-c);x.lineTo(px+w-c,py+hh);x.lineTo(px,py+hh);x.lineTo(px,py+c);x.closePath();}
+
+/* ---------------- comms ---------------- */
+const Comms={cur:null,say(from,text){$('#from').textContent=from;const el=$('#msg');const len=text.length;Sfx.comm();Comms.cur=text;
+  Anim.tween(Math.min(2.6,len*.014),p=>{if(Comms.cur!==text)return;el.textContent=text.slice(0,Math.floor(p*len));});},
+ log(t,cls){const l=$('#log');const d=h('div',cls||'',t);l.prepend(d);while(l.children.length>40)l.lastChild.remove();}};
+
+/* ---------------- debrief ---------------- */
+/* ---------------- mission progression (single source of truth) ---------------- */
+const LOCK_SVG='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-label="locked"><rect x="5" y="11" width="14" height="9"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>';
+const isDone=id=>S.best[id]!=null;
+const isUnlocked=id=>id==='hub'||id===1||isDone(id-1);   /* Mission N opens only after Mission N-1 is completed */
+const isGameComplete=()=>MISSIONS.every(m=>isDone(m.id));
+function denyLocked(id){Sfx.warn();const need=String(id-1).padStart(2,'0');const msg='Deck '+String(id).padStart(2,'0')+' is sealed. Complete Mission '+need+' first.';Comms.log(msg,'w');if(S.room==='hub')Comms.say('AEGIS — STATION INTELLIGENCE',msg);}
+function rankOf(s){return s>=.9?'S':s>=.75?'A':s>=.55?'B':'C';}
+function integrity(){let p=0;MISSIONS.forEach(m=>{if(S.best[m.id]!=null)p+=(1-S.best[m.id])*8;});return Math.round(100-p);}
+function updateIntegrity(){const v=integrity();$('#integBar').style.transform='scaleX('+v/100+')';$('#integBar').style.background=v>75?'var(--em)':v>50?'var(--am)':'var(--co)';countTo($('#integVal'),v);}
+function showDebrief(m,score,lines){
+ const prev=S.best[m.id];if(prev==null||score>prev){S.best[m.id]=score;}
+ updateIntegrity();buildRail();Sfx.done();
+ const room=$('#room');const d=h('div','debrief');
+ const rk=rankOf(score);const rc={S:'var(--em)',A:'var(--cy)',B:'var(--am)',C:'var(--co)'}[rk];
+ d.innerHTML='<div class="beam"></div><div class="dbox"><h3>MISSION DEBRIEF — '+String(m.id).padStart(2,'0')+'</h3><h2>'+m.title+'</h2><div class="dsc"><span class="big">0</span><span class="rk" style="color:'+rc+'">'+rk+'</span></div><ul>'+lines.map((l,i)=>'<li style="animation-delay:'+(.9+i*.5)+'s">'+l+'</li>').join('')+'</ul><div class="btns"></div></div>';
+ const btns=$('.btns',d);const retry=h('button','btn','Retry Mission');retry.onclick=()=>goRoom(m.id);
+ const nxt=h('button','btn pri',m.id<10?'Next Mission':'Return to Command');nxt.onclick=()=>goRoom(m.id<10?m.id+1:'hub');
+ const hub=h('button','btn','Command Deck');hub.onclick=()=>goRoom('hub');btns.append(retry,hub,nxt);
+ if(isGameComplete()){$('.btns',d).before(h('div','gcomp','Game complete — all 10 missions filed. Outbreak contained.'));}
+ room.appendChild(d);countTo($('.big',d),Math.round(score*100),v=>v.toFixed(0),1.4);
+ Comms.say('AEGIS — STATION INTELLIGENCE','Debrief logged. Score '+Math.round(score*100)+' — rank '+rk+'. '+m.learn+(isGameComplete()?' All ten operations are filed — the outbreak is contained. Outstanding work, Chief.':m.id<10?' Mission '+String(m.id+1).padStart(2,'0')+' is now unlocked.':''));Comms.log('Mission '+m.id+' filed: '+Math.round(score*100)+' ('+rk+')',score>=.75?'g':score>=.55?'w':'b');}
+
+/* =====================================================================
+   MISSIONS
+   ===================================================================== */
+/* ---- 01 Noise in the Logs ---- */
+function M1(B,C){
+ const r=rng(11);const nm=['Arlo Vance','Mira Sol','Teo Brandt','Ilsa Quinn','Kofi Mensah','Yuki Tan','Rhea Das','Omar Haidar','Lena Voss','Pavel Roy','Nia Okoro','Sam Ito','Zara Pell','Dev Rao'];
+ let recs=nm.map((n,i)=>({uid:i,id:'C-'+(410+i*9),name:n,age:24+Math.floor(r()*28),temp:+(36.4+r()*1.1).toFixed(1),kind:'ok',note:'',zone:null,pair:null}));
+ recs[3].age=214;recs[3].kind='bad';recs[8].temp=98.6;recs[8].kind='bad';recs[11].age=-4;recs[11].kind='bad';
+ [2,6].forEach((i,k)=>{recs.push({...recs[i],uid:14+k,zone:null});recs[i].pair=i;recs[recs.length-1].pair=i;});
+ for(let i=recs.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[recs[i],recs[j]]=[recs[j],recs[i]];}
+ let selUid=null;
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const bi=Box('Intake stream','<span id="m1left"></span> unsorted');const intake=h('div');intake.id='intake';bi.appendChild(intake);
+ bi.appendChild(h('div','note','Drag each record into the <b>Verified Archive</b> or the <b>Quarantine Bin</b> (or tap a record, then tap a zone). Check ages, temperatures (°C) and repeated IDs.'));L.appendChild(bi);
+ const za=h('div','zone arch','<h4>Verified Archive</h4><div class="chips"></div>');za.dataset.z='arch';
+ const zb=h('div','zone bin','<h4>Quarantine Bin</h4><div class="chips"></div>');zb.dataset.z='bin';
+ L.append(za,zb);
+ const bs=Box('Archive integrity instrument');const kv=Kv([['n','Records','c'],['age','Mean age','a'],['temp','Mean temp °C','a'],['int','Integrity %','g']]);bs.appendChild(kv.el);
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 360 150');svg.setAttribute('class','inst');svg.style.marginTop='10px';
+ const labels=['<0','20s','30s','40s','50s','60+','>120'];let bars='';labels.forEach((l,i)=>{const bad=i===0||i===6;bars+='<rect class="hb" x="'+(18+i*48)+'" y="20" width="36" height="100" fill="'+(bad?'#ff5d62':'#62e3ff')+'" opacity=".8" style="transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);transition:transform .6s cubic-bezier(.2,.8,.2,1)"/><text x="'+(36+i*48)+'" y="138" fill="#8d9bab" font-size="10" text-anchor="middle" font-family="monospace">'+l+'</text><text class="hv" x="'+(36+i*48)+'" y="14" fill="#e4ebf2" font-size="10" text-anchor="middle" font-family="monospace"></text>';});
+ svg.innerHTML='<line x1="10" y1="120" x2="350" y2="120" stroke="#4a5767"/>'+bars;bs.appendChild(svg);R.appendChild(bs);
+ const bt=Box('Archive seal');const seal=h('button','btn pri','Seal Archive');seal.disabled=true;bt.appendChild(seal);bt.appendChild(h('div','note','<br>The archive can only be sealed once every record has been routed. Click a chip to pull a record back.'));R.appendChild(bt);
+ const bars_=[...svg.querySelectorAll('.hb')],hv=[...svg.querySelectorAll('.hv')];
+ function bin(a){return a<0?0:a>120?6:a<30?1:a<40?2:a<50?3:a<60?4:5;}
+ function stats(){const A=recs.filter(x=>x.zone==='arch');const cnt=[0,0,0,0,0,0,0];A.forEach(x=>cnt[bin(x.age)]++);const mx=Math.max(3,...cnt);
+  bars_.forEach((b,i)=>{b.style.transform='scaleY('+cnt[i]/mx+')';hv[i].textContent=cnt[i]||'';});
+  const ids={};A.forEach(x=>ids[x.id]=(ids[x.id]||0)+1);let good=0;A.forEach(x=>{if(x.kind!=='bad')good++;});const dupExtra=Object.values(ids).reduce((s,c)=>s+Math.max(0,c-1),0);good-=dupExtra;
+  countTo(kv.els.n,A.length);countTo(kv.els.age,A.length?avg(A.map(x=>x.age)):0,v=>v.toFixed(1));countTo(kv.els.temp,A.length?avg(A.map(x=>x.temp)):0,v=>v.toFixed(2));countTo(kv.els.int,A.length?good/A.length*100:100);}
+ function render(){intake.innerHTML='';const left=recs.filter(x=>!x.zone);$('#m1left').textContent=left.length;
+  left.forEach(x=>{const c=h('div','rec'+(x.uid===selUid?' sel':''),'<b>'+x.id+'</b>'+x.name+'<br><em>Age '+x.age+' · '+x.temp.toFixed(1)+'°C</em>'+(x.pair!=null?'<span class="pf">ID MATCH</span>':''));c.style.animationDelay=(-Math.random()*5)+'s';c.dataset.u=x.uid;
+   attachDrag(c,x);intake.appendChild(c);});
+  [za,zb].forEach(z=>{const ch=$('.chips',z);ch.innerHTML='';recs.filter(x=>x.zone===z.dataset.z).forEach(x=>{const c=h('span','chip',x.id+' '+x.name.split(' ')[0]);c.onclick=()=>{x.zone=null;Sfx.blip();render();};ch.appendChild(c);});});
+  seal.disabled=left.length>0;stats();}
+ function place(x,z){x.zone=z;selUid=null;const bad=(z==='arch'&&x.kind==='bad');if(bad){Sfx.warn();const zz=z==='arch'?za:zb;zz.classList.remove('flash');void zz.offsetWidth;zz.classList.add('flash');Comms.log('Integrity breach: '+x.id+' is invalid','b');}else Sfx.chime();render();}
+ function attachDrag(card,x){card.addEventListener('pointerdown',e=>{e.preventDefault();const sx=e.clientX,sy=e.clientY;let ghost=null;const rect=card.getBoundingClientRect();
+   const mv=ev=>{if(!ghost&&Math.hypot(ev.clientX-sx,ev.clientY-sy)>6){ghost=card.cloneNode(true);ghost.className='rec ghost';ghost.style.animation='none';document.body.appendChild(ghost);card.style.opacity=.25;}
+    if(ghost){ghost.style.left=(ev.clientX-65)+'px';ghost.style.top=(ev.clientY-20)+'px';const z=zoneAt(ev);[za,zb].forEach(q=>q.classList.toggle('hot',q===z));}};
+   const up=ev=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(ghost){ghost.remove();card.style.opacity=1;const z=zoneAt(ev);[za,zb].forEach(q=>q.classList.remove('hot'));if(z)place(x,z.dataset.z);}else{selUid=selUid===x.uid?null:x.uid;Sfx.sel();render();}};
+   addEventListener('pointermove',mv);addEventListener('pointerup',up);});}
+ function zoneAt(ev){for(const z of [za,zb]){const b=z.getBoundingClientRect();if(ev.clientX>=b.left&&ev.clientX<=b.right&&ev.clientY>=b.top&&ev.clientY<=b.bottom)return z;}return null;}
+ [za,zb].forEach(z=>z.addEventListener('click',e=>{if(e.target.classList.contains('chip'))return;const x=recs.find(q=>q.uid===selUid);if(x)place(x,z.dataset.z);}));
+ seal.onclick=()=>{let ok=0,tot=0;const lines=[];const seen={};
+  recs.forEach(x=>{if(x.pair!=null)return;tot++;const good=x.kind==='ok'?x.zone==='arch':x.zone==='bin';if(good)ok++;});
+  [2,6].forEach(p=>{tot++;const g=recs.filter(x=>x.pair===p);const na=g.filter(x=>x.zone==='arch').length;if(na===1)ok++;});
+  const A=recs.filter(x=>x.zone==='arch');const bad=A.filter(x=>x.kind==='bad').length;
+  lines.push('Correct routing: '+ok+' of '+tot+' record groups.');
+  if(bad)lines.push(bad+' invalid record(s) were archived — they distorted the mean age/temperature.');else lines.push('No invalid entries reached the archive. Distributions stay trustworthy.');
+  lines.push('Rule of thumb: validate ranges and units first, then remove exact duplicates, then summarise.');C.finish(ok/tot,lines);};
+ render();}
+
+/* ---- 02 The Missing Vitals ---- */
+function M2(B,C){
+ const r=rng(22),N=24;const truth=[];for(let i=0;i<N;i++)truth.push(37+.35*Math.sin(i/N*6.283)+gauss(r)*.08);
+ const trueMean=avg(truth),trueSd=sd(truth);const raw=truth.slice();[2,7,12,13,19].forEach(i=>raw[i]=null);const OUT=16;raw[OUT]=43.8;
+ const st={out:'keep',imp:'mean'};
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1=Box('Thermal waveform — hourly crew core temperature','°C');const cv=mkCanvas(b1,230);L.appendChild(b1);
+ const b2=Box('Calibration controls');b2.appendChild(Ctl('Suspect outlier (hour 16: 43.8 °C)',Seg([['keep','Keep reading'],['drop','Treat as sensor fault']],'keep',v=>{st.out=v;compute();})));
+ b2.appendChild(Ctl('Missing readings (5 gaps)',Seg([['mean','Mean impute'],['median','Median impute'],['none','Drop gaps']],'mean',v=>{st.imp=v;compute();})));L.appendChild(b2);
+ const b3=Box('Measurement display');const g=mkCanvas(b3,200);R.appendChild(b3);
+ const b4=Box('Statistics');const kv=Kv([['mean','Mean °C','c'],['med','Median °C','a'],['sd','Std dev','v'],['n','n','g']]);b4.appendChild(kv.el);
+ const commit=h('button','btn pri','Commit Calibration');commit.style.marginTop='12px';b4.appendChild(commit);R.appendChild(b4);
+ let vals,series,fin,disp=raw.map((v,i)=>v==null?37:v),dist=1,distT=1,needle=[37,37],nT=[37,37];
+ function compute(){vals=raw.map((v,i)=>(i===OUT&&st.out==='drop')?null:v);const obs=vals.filter(v=>v!=null);const m=avg(obs),md=median(obs);const fill=st.imp==='mean'?m:st.imp==='median'?md:null;
+  series=vals.map(v=>v!=null?v:fill);fin=series.filter(v=>v!=null);nT=[avg(fin),median(fin)];distT=st.out==='keep'?1:0;
+  countTo(kv.els.mean,avg(fin),v=>v.toFixed(2));countTo(kv.els.med,median(fin),v=>v.toFixed(2));countTo(kv.els.sd,sd(fin),v=>v.toFixed(2));countTo(kv.els.n,fin.length);cv.dirty=g.dirty=true;Sfx.scan();}
+ compute();
+ const Y0=35.5,Y1=44.5;
+ Anim.add((dt,t)=>{let moving=false;for(let i=0;i<N;i++){const tg=series[i]==null?null:series[i];if(tg!=null){const d=tg-disp[i];if(Math.abs(d)>.002){disp[i]+=d*Math.min(1,dt*7);moving=true;}}}
+  dist+=(distT-dist)*Math.min(1,dt*5);needle[0]+=(nT[0]-needle[0])*Math.min(1,dt*5);needle[1]+=(nT[1]-needle[1])*Math.min(1,dt*5);
+  if(moving||Math.abs(distT-dist)>.01||cv.dirty||g.dirty||true){drawWave(t);drawGauge(t);cv.dirty=g.dirty=false;}});
+ function drawWave(t){const x=cv.ctx,w=cv.w,hh=cv.h,px=36,py=14,pw=w-px-12,ph=hh-py-26;x.clearRect(0,0,w,hh);const Y=v=>py+ph-(v-Y0)/(Y1-Y0)*ph,X=i=>px+i/(N-1)*pw;
+  x.fillStyle='rgba(63,224,160,.08)';x.fillRect(px,Y(37.5),pw,Y(36.5)-Y(37.5));x.fillStyle='#8d9bab';x.font='10px monospace';x.textAlign='right';for(let v=36;v<=44;v+=2){x.fillText(v,px-6,Y(v)+3);x.strokeStyle='rgba(141,155,171,.15)';x.beginPath();x.moveTo(px,Y(v));x.lineTo(px+pw,Y(v));x.stroke();}
+  x.textAlign='center';for(let i=0;i<N;i+=4)x.fillText(i+'h',X(i),hh-8);
+  x.strokeStyle='#62e3ff';x.lineWidth=2;x.beginPath();let pen=false;for(let i=0;i<N;i++){if(series[i]==null){pen=false;continue;}const yy=Y(disp[i]);if(!pen){x.moveTo(X(i),yy);pen=true;}else x.lineTo(X(i),yy);}x.stroke();
+  for(let i=0;i<N;i++){if(series[i]==null){x.strokeStyle='rgba(226,178,76,.6)';x.setLineDash([3,3]);x.beginPath();x.moveTo(X(i),py);x.lineTo(X(i),py+ph);x.stroke();x.setLineDash([]);x.fillStyle='#e2b24c';x.fillText('?',X(i),py+10);continue;}
+   if(raw[i]==null){x.strokeStyle='#e2b24c';x.fillStyle='rgba(226,178,76,.25)';x.beginPath();x.moveTo(X(i),Y(disp[i])-5);x.lineTo(X(i)+5,Y(disp[i]));x.lineTo(X(i),Y(disp[i])+5);x.lineTo(X(i)-5,Y(disp[i]));x.closePath();x.fill();x.stroke();}
+   else if(i===OUT){x.fillStyle='#ff5d62';x.beginPath();x.arc(X(i),Y(disp[i]),5,0,6.283);x.fill();x.strokeStyle='rgba(255,93,98,.5)';x.beginPath();x.arc(X(i),Y(disp[i]),9+2*Math.sin(t*4),0,6.283);x.stroke();}
+   else{x.fillStyle='#e4ebf2';x.fillRect(X(i)-2,Y(disp[i])-2,4,4);}}
+  if(st.out==='drop'){x.fillStyle='rgba(255,93,98,.7)';x.fillText('✕ fault',X(OUT),Y(43.8)-12);}
+  const sx=px+((t*.25)%1)*pw;x.strokeStyle='rgba(98,227,255,.25)';x.beginPath();x.moveTo(sx,py);x.lineTo(sx,py+ph);x.stroke();}
+ function drawGauge(t){const x=g.ctx,w=g.w,hh=g.h,cx=w/2,cy=hh-26,R=Math.min(w*.42,hh*.78);x.clearRect(0,0,w,hh);const ang=v=>Math.PI+(clamp(v,Y0,Y1)-Y0)/(Y1-Y0)*Math.PI;
+  const wob=dist*(Math.sin(t*23)*.012+Math.sin(t*7.3)*.02);x.lineWidth=14;x.strokeStyle='rgba(141,155,171,.18)';x.beginPath();x.arc(cx,cy,R,Math.PI,0);x.stroke();
+  x.strokeStyle='rgba(63,224,160,.55)';x.beginPath();x.arc(cx,cy,R,ang(36.5),ang(37.5));x.stroke();
+  x.lineWidth=1;for(let v=36;v<=44;v+=1){const a=ang(v)+wob*(v%2?1:-1)*dist*2;x.strokeStyle='rgba(141,155,171,.6)';x.beginPath();x.moveTo(cx+Math.cos(a)*(R-14),cy+Math.sin(a)*(R-14));x.lineTo(cx+Math.cos(a)*(R+10),cy+Math.sin(a)*(R+10));x.stroke();x.fillStyle='#8d9bab';x.font='9px monospace';x.textAlign='center';x.fillText(v,cx+Math.cos(a)*(R+22),cy+Math.sin(a)*(R+22)+3);}
+  if(dist>.05){x.strokeStyle='rgba(255,93,98,'+.5*dist+')';x.lineWidth=2;x.beginPath();x.arc(cx,cy,R+30,Math.PI,0);x.stroke();}
+  const nd=(v,col,len)=>{const a=ang(v)+wob;x.strokeStyle=col;x.lineWidth=3;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a)*len,cy+Math.sin(a)*len);x.stroke();};
+  nd(needle[1],'#e2b24c',R-10);nd(needle[0],'#62e3ff',R-22);x.fillStyle='#e4ebf2';x.beginPath();x.arc(cx,cy,6,0,6.283);x.fill();
+  x.font='600 20px monospace';x.fillStyle=dist>.5?'#ff5d62':'#e4ebf2';x.textAlign='center';x.fillText(needle[0].toFixed(2)+' °C',cx,cy-R*.35);x.font='10px monospace';x.fillStyle='#62e3ff';x.fillText('mean',cx-40,cy+16);x.fillStyle='#e2b24c';x.fillText('median',cx+40,cy+16);}
+ commit.onclick=()=>{const em=Math.abs(avg(fin)-trueMean),es=Math.abs(sd(fin)-trueSd);const sc=clamp(1-(em/.4*.6+es/.15*.4),0,1);
+  const lines=['Calibrated mean '+avg(fin).toFixed(2)+' °C vs reference '+trueMean.toFixed(2)+' °C (error '+em.toFixed(2)+').','Spread '+sd(fin).toFixed(2)+' vs reference '+trueSd.toFixed(2)+'.',
+   st.out==='keep'?'The 43.8 °C spike dragged the mean while the median barely moved — the median is robust to outliers.':'Removing the faulty spike restored a believable mean and spread.',
+   st.imp==='none'?'Dropping gaps loses hours; imputation keeps the time grid but shrinks variance.':'Imputing with the centre shrinks variance slightly — good for the mean, optimistic for the spread.'];C.finish(sc,lines);};}
+
+/* ---- 03 The Cafeteria Clue ---- */
+function M3(B,C){
+ const items=['Algae Noodles','Hydro Salad','Synth Burger','Citrus Tonic','Protein Pudding'],pe=[.55,.45,.5,.4,.35];
+ const secs=[{n:'Cafeteria',x:.2,y:.3},{n:'Hydroponics',x:.5,y:.22},{n:'Barracks A',x:.8,y:.3},{n:'Barracks B',x:.2,y:.72},{n:'Gymnasium',x:.5,y:.78},{n:'Hangar',x:.8,y:.72}];
+ const r=rng(303);const crew=[];for(let i=0;i<90;i++){const ate=items.map((_,k)=>r()<pe[k]);if(ate[1]&&r()<.55)ate[3]=true;const inf=r()<(.05+(ate[1]?.5:0));crew.push({sec:Math.floor(r()*6),ate,inf,x:0,y:0,tx:r(),ty:r(),nt:0});}
+ const stat=items.map((_,k)=>{const E=crew.filter(c=>c.ate[k]),U=crew.filter(c=>!c.ate[k]);const re=E.filter(c=>c.inf).length/Math.max(1,E.length),ru=U.filter(c=>c.inf).length/Math.max(1,U.length);return{re,ru,rr:ru>0?re/ru:99,ne:E.length};});
+ const order=stat.map((s,i)=>i).sort((a,b)=>stat[b].rr-stat[a].rr);
+ const st={heat:true,lines:false,sel:null,secSel:-1};
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1=Box('Station surveillance map','90 crew · live tracking');const cv=mkCanvas(b1,300);
+ const tgs=h('div','btns');tgs.append(Toggle('Infection heatmap',true,v=>{st.heat=v;}),Toggle('Transmission mesh',false,v=>{st.lines=v;}));b1.appendChild(tgs);const info=h('div','note');info.style.marginTop='8px';info.textContent='Tap a sector to inspect it.';b1.appendChild(info);L.appendChild(b1);
+ const b2=Box('Meal exposure analysis','attack rate: exposed vs unexposed');const list=h('div');
+ items.forEach((n,k)=>{const d=h('div','item','<div class="nm"><span>'+n+'</span><b>RR '+(stat[k].rr>50?'∞':stat[k].rr.toFixed(1))+'</b></div><div class="hbar" style="grid-template-columns:70px 1fr 40px"><span style="color:#ff5d62">ate</span><div class="t"><i style="background:#ff5d62;transform:scaleX(0)"></i></div><span>'+Math.round(stat[k].re*100)+'%</span></div><div class="hbar" style="grid-template-columns:70px 1fr 40px"><span style="color:#8d9bab">did not</span><div class="t"><i style="background:#8d9bab;transform:scaleX(0)"></i></div><span>'+Math.round(stat[k].ru*100)+'%</span></div>');
+  d.onclick=()=>{st.sel=k;[...list.children].forEach((c,i)=>c.classList.toggle('sel',i===k));Sfx.sel();};list.appendChild(d);
+  setTimeout(()=>{const is=d.querySelectorAll('.t i');is[0].style.transform='scaleX('+stat[k].re+')';is[1].style.transform='scaleX('+stat[k].ru+')';},120+k*120);});
+ b2.appendChild(list);const go=h('button','btn warn','Issue Food-Hold Order');go.style.marginTop='8px';go.onclick=()=>{if(st.sel==null){info.textContent='Select a meal item first.';Sfx.warn();return;}
+  const pos=order.indexOf(st.sel);const sc=[1,.45,.25,.1,.1][pos];C.finish(sc,['You held: '+items[st.sel]+' (relative risk '+(stat[st.sel].rr>50?'∞':stat[st.sel].rr.toFixed(1))+').','Strongest association: '+items[order[0]]+' (RR '+stat[order[0]].rr.toFixed(1)+').','Items correlated with the culprit (e.g. the tonic) can look guilty — compare attack rates, not just counts.','Infection is spread across every sector, so the geographic heatmap alone cannot name the source.']);};
+ b2.appendChild(go);R.appendChild(b2);
+ const sRect=s=>({x:s.x*cv.w,y:s.y*cv.h,w:cv.w*.24,h:cv.h*.3});
+ cv.c.addEventListener('click',e=>{const b=cv.c.getBoundingClientRect();const mx=e.clientX-b.left,my=e.clientY-b.top;secs.forEach((s,i)=>{const q=sRect(s);if(Math.abs(mx-q.x)<q.w/2&&Math.abs(my-q.y)<q.h/2){st.secSel=i;const c=crew.filter(k=>k.sec===i);info.textContent=s.n+': '+c.length+' crew, '+c.filter(k=>k.inf).length+' infected ('+Math.round(c.filter(k=>k.inf).length/Math.max(1,c.length)*100)+'%).';Sfx.blip();}});});
+ Anim.add((dt,t)=>{const x=cv.ctx,w=cv.w,hh=cv.h;x.clearRect(0,0,w,hh);
+  secs.forEach((s,i)=>{const q=sRect(s);const px=q.x-q.w/2,py=q.y-q.h/2;const ic=crew.filter(c=>c.sec===i&&c.inf).length;
+   if(st.heat){const g=x.createRadialGradient(q.x,q.y,2,q.x,q.y,q.w*.8);const a=clamp(ic/6,0,1)*(.55+.1*Math.sin(t*2+i));g.addColorStop(0,'rgba(255,93,98,'+a+')');g.addColorStop(1,'rgba(255,93,98,0)');x.fillStyle=g;x.fillRect(px-q.w*.4,py-q.h*.5,q.w*1.8,q.h*2);}
+   drawChamfer(x,px,py,q.w,q.h,10);x.fillStyle='rgba(10,20,36,.7)';x.fill();x.strokeStyle=st.secSel===i?'#62e3ff':'rgba(141,155,171,.45)';x.lineWidth=st.secSel===i?2:1;x.stroke();x.fillStyle='#8d9bab';x.font='9px monospace';x.textAlign='left';x.fillText(s.n.toUpperCase(),px+6,py+12);});
+  crew.forEach(c=>{const s=secs[c.sec],q=sRect(s);c.nt-=dt;if(c.nt<=0){c.tx=Math.random();c.ty=Math.random();c.nt=2+Math.random()*4;}const gx=q.x-q.w/2+8+c.tx*(q.w-16),gy=q.y-q.h/2+20+c.ty*(q.h-28);if(!c.x){c.x=gx;c.y=gy;}c.x+=(gx-c.x)*dt*.8;c.y+=(gy-c.y)*dt*.8;});
+  if(st.lines){x.strokeStyle='rgba(255,93,98,.35)';x.lineWidth=1;for(let i=0;i<crew.length;i++){const a=crew[i];if(!a.inf)continue;for(let j=i+1;j<crew.length;j++){const b=crew[j];if(!b.inf||b.sec!==a.sec)continue;x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();}}}
+  crew.forEach(c=>{const hl=st.sel!=null&&c.ate[st.sel];x.fillStyle=st.heat&&c.inf?'#ff5d62':'#cdd8e4';x.globalAlpha=st.sel!=null&&!hl?.25:1;x.beginPath();x.arc(c.x,c.y,2.6,0,6.283);x.fill();if(hl){x.strokeStyle='#e2b24c';x.beginPath();x.arc(c.x,c.y,4.5,0,6.283);x.stroke();}x.globalAlpha=1;});});}
+
+/* ---- 04 The Confounding Trap ---- */
+function M4(B,C){
+ // cell counts: [shift][coffee] = {n, inf}
+ const cells={night:{cof:{n:192,i:77},no:{n:48,i:19}},day:{cof:{n:60,i:5},no:{n:180,i:14}}};
+ const r=rng(404);const dots=[];
+ ['night','day'].forEach(s=>['cof','no'].forEach(c=>{const cell=cells[s][c];for(let k=0;k<cell.n;k++)dots.push({s,c,inf:k<cell.i,mx:r(),my:r(),sx:r(),sy:r(),x:0,y:0,init:false});}));
+ const rr=(a,b)=>(a.i/a.n)/(b.i/b.n);
+ const tot=c=>({n:cells.night[c].n+cells.day[c].n,i:cells.night[c].i+cells.day[c].i});
+ const crude=rr(tot('cof'),tot('no'));const rrN=rr(cells.night.cof,cells.night.no),rrD=rr(cells.day.cof,cells.day.no);
+ let mhN=0,mhD=0;['night','day'].forEach(s=>{const a=cells[s].cof,b=cells[s].no,N=a.n+b.n;mhN+=a.i*b.n/N;mhD+=b.i*a.n/N;});const mh=mhN/mhD;
+ const st={strat:false,used:false,t:0,tt:0};
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1=Box('Multi-deck investigation','480 crew · ring = coffee drinker · red = infected');const cv=mkCanvas(b1,330);
+ b1.appendChild(Toggle('Stratify by shift (separate Day Deck / Night Deck)',false,v=>{st.strat=v;st.tt=v?1:0;if(v)st.used=true;Sfx.scan();upd();}));L.appendChild(b1);
+ const b2=Box('Risk ratio — coffee vs infection');const kv=Kv([['crude','Crude RR','r'],['day','Day RR','g'],['night','Night RR','g'],['mh','Adjusted RR','c']]);b2.appendChild(kv.el);
+ b2.appendChild(h('div','note','<br>Night shift staff work on Deck C where ventilation has failed — and they drink more coffee. Stratify to see whether coffee still matters inside each shift.'));R.appendChild(b2);
+ const b3=Box('Verdict');const out=h('div','btns');out.style.flexDirection='column';out.style.alignItems='stretch';
+ const opts=[['cause','Coffee is causing the infections — ban it'],['conf','Shift (failed ventilation) confounds the link — repair Deck C air handling'],['none','Not enough data to say anything']];
+ opts.forEach(([k,l])=>{const b=h('button','btn',l);b.onclick=()=>{const good=k==='conf';const sc=good?(st.used?1:.6):k==='none'?.3:.05;C.finish(sc,[good?'Correct: within each shift coffee has RR ≈ 1.0 ('+rrD.toFixed(2)+' day, '+rrN.toFixed(2)+' night).':'Coffee only looked harmful in the combined data (crude RR '+crude.toFixed(2)+').',st.used?'You stratified before deciding — that is the key move against confounding.':'You answered without stratifying. Always check whether a third variable drives both exposure and outcome.','Mantel–Haenszel adjusted RR: '+mh.toFixed(2)+'.']);};out.appendChild(b);});
+ b3.appendChild(out);R.appendChild(b3);
+ function upd(){countTo(kv.els.crude,crude,v=>v.toFixed(2));if(st.strat){countTo(kv.els.day,rrD,v=>v.toFixed(2));countTo(kv.els.night,rrN,v=>v.toFixed(2));countTo(kv.els.mh,mh,v=>v.toFixed(2));}else{['day','night','mh'].forEach(k=>kv.els[k].textContent='–');}}
+ upd();
+ Anim.add((dt,t)=>{st.t+=(st.tt-st.t)*Math.min(1,dt*3.5);const x=cv.ctx,w=cv.w,hh=cv.h;x.clearRect(0,0,w,hh);const k=st.t;
+  const plate=(y,lab,col,dim)=>{x.fillStyle='rgba(10,20,36,'+(.55+.2*dim)+')';x.strokeStyle=col;x.lineWidth=1;x.beginPath();x.moveTo(w*.12,y);x.lineTo(w*.88,y);x.lineTo(w*.96,y+hh*.26);x.lineTo(w*.04,y+hh*.26);x.closePath();x.fill();x.globalAlpha=.6;x.stroke();x.globalAlpha=1;x.fillStyle=col;x.font='10px monospace';x.textAlign='left';x.fillText(lab,w*.06,y+hh*.24);};
+  const yMerged=hh*.28,yDay=hh*.04,yNight=hh*.52;
+  plate(lerp(yMerged,yDay,k),k>.5?'DECK A — DAY SHIFT':'STATION CREW','#62e3ff',1);if(k>.02){x.globalAlpha=k;plate(lerp(yMerged,yNight,k),'DECK C — NIGHT SHIFT · VENT FAILURE','#e2b24c',0);x.globalAlpha=1;
+   x.strokeStyle='rgba(226,178,76,'+.5*k+')';for(let i=0;i<6;i++){const fx=w*(.15+i*.14),fy=yNight+hh*.02+((t*20+i*13)%hh*.2);x.beginPath();x.moveTo(fx,yNight+hh*.02);x.lineTo(fx+Math.sin(t+i)*6,fy);x.stroke();}}
+  dots.forEach(d=>{const my=hh*.28+hh*.02+d.my*hh*.2,mx=w*.12+d.mx*w*.76;const yB=d.s==='day'?yDay:yNight;const sy=yB+hh*.02+d.sy*hh*.2,sx=w*.12+d.sx*w*.76;const tx=lerp(mx,sx,k),ty=lerp(my,sy,k);if(!d.init){d.x=tx;d.y=ty;d.init=true;}d.x+=(tx-d.x)*Math.min(1,dt*6);d.y+=(ty-d.y)*Math.min(1,dt*6);
+   x.fillStyle=d.inf?'#ff5d62':'#aebccb';x.beginPath();x.arc(d.x,d.y,2.4,0,6.283);x.fill();if(d.c==='cof'){x.strokeStyle='rgba(226,178,76,.8)';x.lineWidth=1;x.beginPath();x.arc(d.x,d.y,4,0,6.283);x.stroke();}});});}
+
+/* ---- 05 The Airlock Gamble ---- */
+function M5(B,C){
+ const SH=[{n:'Shuttle Kestrel',size:6,p:.4},{n:'Shuttle Marlin',size:8,p:.1},{n:'Shuttle Osprey',size:10,p:.25}],SENS=.9,KITS=12;
+ const alloc=[0,0,0];let ran=0,runState=null;
+ const binom=(n,p)=>{const out=[];let c=1;for(let k=0;k<=n;k++){out.push(c*Math.pow(p,k)*Math.pow(1-p,n-k));c=c*(n-k)/(k+1);}return out;};
+ const conv=(a,b)=>{const o=new Array(a.length+b.length-1).fill(0);a.forEach((x,i)=>b.forEach((y,j)=>o[i+j]+=x*y));return o;};
+ const dist=al=>{let d=[1];SH.forEach((s,i)=>{d=conv(d,binom(al[i],s.p*SENS));});return d;};
+ const ev=al=>al.reduce((s,k,i)=>s+k*SH[i].p*SENS,0);
+ const opt=(()=>{let left=KITS;const a=[0,0,0];[0,2,1].forEach(i=>{const k=Math.min(left,SH[i].size);a[i]=k;left-=k;});return a;})();const evOpt=ev(opt),dOpt=dist(opt);
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1=Box('Docking bays — arriving shuttles','12 rapid test kits (sensitivity 90%)');const cv=mkCanvas(b1,250);L.appendChild(b1);
+ const b2=Box('Test-kit allocation');const sl=SH.map((s,i)=>{const o=Slider({label:s.n+' ('+s.size+' pax, prevalence '+Math.round(s.p*100)+'%)',min:0,max:s.size,step:1,val:0,onInput:v=>{const others=alloc.reduce((q,a,j)=>j===i?q:q+a,0);v=Math.min(v,KITS-others);o.set(v);alloc[i]=v;upd();}});b2.appendChild(o.el);return o;});
+ const kv=Kv([['used','Kits used','c'],['ev','Expected finds','a'],['opt','Best possible','g']]);b2.appendChild(kv.el);const bt=h('div','btns');bt.style.marginTop='10px';
+ const run=h('button','btn pri','Run Screening');const fin=h('button','btn ok','File Airlock Report');fin.disabled=true;bt.append(run,fin);b2.appendChild(bt);L.appendChild(b2);
+ const b3=Box('Distribution of true infections found','your plan (cyan) vs best plan (amber outline)');const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 360 170');svg.setAttribute('class','inst');b3.appendChild(svg);R.appendChild(b3);
+ const res=h('div','note','Allocate kits, then run the screening to see who the scanners flag.');const b4=Box('Scanner log');b4.appendChild(res);R.appendChild(b4);
+ const bars=[];for(let k=0;k<=12;k++){const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.innerHTML='<rect x="'+(20+k*25)+'" y="20" width="20" height="120" fill="rgba(98,227,255,.6)" style="transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);transition:transform .5s cubic-bezier(.2,.8,.2,1)"/><rect class="o" x="'+(20+k*25)+'" y="20" width="20" height="120" fill="none" stroke="#e2b24c" style="transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);transition:transform .5s"/><text x="'+(30+k*25)+'" y="156" fill="#8d9bab" font-size="10" text-anchor="middle" font-family="monospace">'+k+'</text>';svg.appendChild(g);bars.push(g);}
+ function upd(){const d=dist(alloc);const mx=Math.max(.35,...d,...dOpt);bars.forEach((g,k)=>{const r1=g.children[0],r2=g.children[1];r1.style.transform='scaleY('+((d[k]||0)/mx)+')';r2.style.transform='scaleY('+((dOpt[k]||0)/mx)+')';});
+  const used=alloc.reduce((a,b)=>a+b,0);countTo(kv.els.used,used);countTo(kv.els.ev,ev(alloc),v=>v.toFixed(2));countTo(kv.els.opt,evOpt,v=>v.toFixed(2));cv.dirty=true;}
+ // passengers
+ const pax=SH.map((s,i)=>{const r=rng(500+i);return Array.from({length:s.size},()=>({inf:r()<s.p,pos:false,sc:false}));});
+ pax[0][1].inf=true;pax[0][4].inf=true;pax[2][3].inf=true;pax[2][8].inf=true;pax[1][2].inf=true;
+ run.onclick=()=>{if(runState)return;const used=alloc.reduce((a,b)=>a+b,0);if(!used){res.textContent='Allocate at least one test kit.';Sfx.warn();return;}
+  pax.forEach(s=>s.forEach(p=>{p.sc=false;p.pos=false;}));runState={t:0,found:0,flagged:0};Sfx.scan();
+  const order=[];SH.forEach((s,i)=>{for(let j=0;j<alloc[i];j++)order.push([i,j]);});
+  Anim.tween(order.length*.25+.5,p=>{runState.t=p;const n=Math.floor(p*order.length);for(let q=0;q<n;q++){const [i,j]=order[q];const pp=pax[i][j];if(!pp.sc){pp.sc=true;pp.pos=pp.inf?Math.random()<SENS:Math.random()<.04;if(pp.pos){Sfx.blip();}}}cv.dirty=true;},()=>{
+   let f=0,fl=0;order.forEach(([i,j])=>{if(pax[i][j].pos){fl++;if(pax[i][j].inf)f++;}});ran++;runState=null;fin.disabled=false;res.innerHTML='Screening '+ran+': <b>'+fl+'</b> positive flags, <b>'+f+'</b> true infections found. Expected finds for this plan: '+ev(alloc).toFixed(2)+'. Re-run to see random variation, or file the report.';Sfx.chime();cv.dirty=true;});};
+ fin.onclick=()=>{const sc=clamp(ev(alloc)/evOpt,0,1);C.finish(sc,['Your plan expects '+ev(alloc).toFixed(2)+' detections; the best plan expects '+evOpt.toFixed(2)+'.','Expected yield per kit = prevalence × sensitivity. Fill the highest-prevalence shuttle first, then the next, within each shuttle size.','Distributions overlap heavily — one run is noisy, expected value is the fair judge of a plan.']);};
+ Anim.add((dt,t)=>{const x=cv.ctx,w=cv.w,hh=cv.h;x.clearRect(0,0,w,hh);SH.forEach((s,i)=>{const bw=w/3-14,bx=7+i*(w/3);const arr=Math.min(1,(t*.3+i*.2)%3);x.strokeStyle='rgba(141,155,171,.5)';drawChamfer(x,bx,18,bw,hh-30,12);x.fillStyle='rgba(10,20,36,.7)';x.fill();x.stroke();x.fillStyle='#62e3ff';x.font='10px monospace';x.textAlign='left';x.fillText(s.n.toUpperCase(),bx+8,32);x.fillStyle='#8d9bab';x.fillText('prev '+Math.round(s.p*100)+'%  kits '+alloc[i],bx+8,46);
+   pax[i].forEach((p,j)=>{const cols=Math.ceil(bw/22),px=bx+16+(j%cols)*22,py=70+Math.floor(j/cols)*30+Math.sin(t*1.5+j)*1.5;const tested=j<alloc[i];x.fillStyle=p.sc?(p.pos?'#ff5d62':'#3fe0a0'):'#cdd8e4';x.beginPath();x.arc(px,py,6,0,6.283);x.fill();if(tested){x.strokeStyle='#62e3ff';x.lineWidth=1;x.beginPath();x.arc(px,py,9,0,6.283);x.stroke();}if(p.sc&&p.inf&&!p.pos){x.strokeStyle='#9a7bff';x.beginPath();x.moveTo(px-4,py-4);x.lineTo(px+4,py+4);x.moveTo(px+4,py-4);x.lineTo(px-4,py+4);x.stroke();}});
+   if(runState){const gx=bx+((runState.t*3+i*.2)%1)*bw;const g=x.createLinearGradient(gx-10,0,gx+10,0);g.addColorStop(0,'rgba(98,227,255,0)');g.addColorStop(.5,'rgba(98,227,255,.4)');g.addColorStop(1,'rgba(98,227,255,0)');x.fillStyle=g;x.fillRect(gx-10,40,20,hh-60);}});});
+ upd();}
+
+/* ---- 06 The False Alarm Paradox ---- */
+function M6(B,C){
+ const N=1000,COLS=40,ROWS=25;const r=rng(606);const perm=Array.from({length:N},(_,i)=>i);for(let i=N-1;i>0;i--){const j=Math.floor(r()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]];}
+ const par={prev:.01,sens:.99,spec:.95};let scanP=0,scanning=false,scanned=false,guess=50,lock=false;
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1=Box('Crew population — 1,000 individuals','each cell is one crew member');const cv=mkCanvas(b1,300);L.appendChild(b1);
+ const leg=h('div','legend','<span><i style="background:#ff5d62"></i>True positive</span><span><i style="background:#e2b24c"></i>False alarm</span><span><i style="background:#9a7bff"></i>Missed case</span><span><i style="background:#3b7a68"></i>True negative</span>');b1.appendChild(leg);
+ const b2=Box('Diagnostic instrument dials');const dl=h('div');
+ const dP=Dial({label:'Prevalence',min:.001,max:.2,step:.001,val:par.prev,fmt:v=>(v*100).toFixed(1)+'%',onChange:v=>{par.prev=v;recalc();}});
+ const dS=Dial({label:'Sensitivity',min:.5,max:1,step:.005,val:par.sens,fmt:v=>(v*100).toFixed(1)+'%',onChange:v=>{par.sens=v;recalc();}});
+ const dC=Dial({label:'Specificity',min:.8,max:1,step:.0025,val:par.spec,fmt:v=>(v*100).toFixed(1)+'%',onChange:v=>{par.spec=v;recalc();}});
+ dl.append(dP.el,dS.el,dC.el);b2.appendChild(dl);const sc=h('button','btn pri','Scan Entire Crew');b2.appendChild(sc);R.appendChild(b2);
+ const b3=Box('Natural-frequency readout');const kv=Kv([['tp','True +','r'],['fp','False +','a'],['fn','Missed','v'],['tn','True −','g']]);b3.appendChild(kv.el);const ppvEl=h('div','note');ppvEl.style.marginTop='10px';b3.appendChild(ppvEl);R.appendChild(b3);
+ const b4=Box('Your estimate');const gs=Slider({label:'A crew member tests POSITIVE. Chance they are truly infected?',min:0,max:100,step:1,val:50,fmt:v=>v+'%',onInput:v=>{guess=v;}});b4.appendChild(gs.el);const lk=h('button','btn ok','Lock Answer');lk.disabled=true;b4.appendChild(lk);R.appendChild(b4);
+ let cls=new Array(N).fill(0),cnt={tp:0,fp:0,fn:0,tn:0},I=0;
+ function recalc(){I=Math.round(par.prev*N);cnt={tp:0,fp:0,fn:0,tn:0};for(let i=0;i<N;i++){const p=perm[i];let c;if(p<I){const u=(p+.5)/I;c=u<par.sens?1:3;}else{const u=(p-I+.5)/(N-I);c=u<(1-par.spec)?2:4;}cls[i]=c;cnt[['','tp','fp','fn','tn'][c]]++;}
+  const pos=cnt.tp+cnt.fp;const ppv=pos?cnt.tp/pos:0;countTo(kv.els.tp,cnt.tp);countTo(kv.els.fp,cnt.fp);countTo(kv.els.fn,cnt.fn);countTo(kv.els.tn,cnt.tn);
+  ppvEl.innerHTML='Of <b>'+pos+'</b> positive scans, only <b>'+cnt.tp+'</b> are truly infected → P(infected | positive) = <b style="color:#62e3ff">'+(ppv*100).toFixed(1)+'%</b>';cv.dirty=true;}
+ function ppvT(){const a=par.prev*par.sens,b=(1-par.prev)*(1-par.spec);return a/(a+b);}
+ sc.onclick=()=>{if(scanning)return;scanning=true;scanP=0;Sfx.scan();Anim.tween(3,p=>{scanP=p;cv.dirty=true;},()=>{scanning=false;scanned=true;lk.disabled=false;Sfx.chime();Comms.log('Scan complete: '+(cnt.tp+cnt.fp)+' positive flags','w');});};
+ lk.onclick=()=>{const t=ppvT()*100,err=Math.abs(guess-t);const s=clamp(1-err/35,0,1);C.finish(s,['You estimated '+guess+'%; Bayes says '+t.toFixed(1)+'%.','With low prevalence even an accurate test produces mostly false alarms: P(inf|+) = prev·sens / (prev·sens + (1−prev)(1−spec)).','Raise the prevalence dial or specificity dial and watch the false alarms shrink relative to true cases.']);};
+ Anim.add((dt,t)=>{if(!cv.dirty&&!scanning)return;cv.dirty=false;const x=cv.ctx,w=cv.w,hh=cv.h;x.clearRect(0,0,w,hh);const cw=w/COLS,ch=hh/ROWS;
+  const col=['#cdd8e4','#ff5d62','#e2b24c','#9a7bff','#3b7a68'];for(let i=0;i<N;i++){const cx=(i%COLS)*cw,cy=Math.floor(i/COLS)*ch;const done=scanned||(i/N)<scanP;const c=done?cls[i]:0;x.fillStyle=col[c];x.globalAlpha=c===0?.35:c===4?.5:.95;x.fillRect(cx+1,cy+1,cw-2,ch-2);}
+  x.globalAlpha=1;if(scanning){const sy=scanP*hh;const g=x.createLinearGradient(0,sy-16,0,sy+4);g.addColorStop(0,'rgba(98,227,255,0)');g.addColorStop(1,'rgba(98,227,255,.5)');x.fillStyle=g;x.fillRect(0,sy-16,w,20);}});
+ recalc();scanned=false;}
+
+/* ---- 07 Miracle Serum X ---- */
+function M7(B,C){
+ const st={n:40,mode:'rand'};let res=null,ran=0,anim=0;
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1=Box('Specimen rack','cyan cap = Serum X · silver cap = placebo · fluid = recovery');const cv=mkCanvas(b1,300);L.appendChild(b1);
+ const b2=Box('Trial design');b2.appendChild(Ctl('Sample size',Seg([[40,'40'],[120,'120'],[400,'400']],40,v=>{st.n=+v;})));
+ b2.appendChild(Ctl('Assignment',Seg([['rand','Randomised'],['doc',"Doctor's choice (healthiest get serum)"]],'rand',v=>{st.mode=v;})));
+ const go=h('button','btn pri','Run Trial');b2.appendChild(go);L.appendChild(b2);
+ const b3=Box('Treatment comparison');const kv=Kv([['a','Serum recovery','g'],['b','Placebo recovery','a'],['d','Difference','c'],['p','p-value','v']]);b3.appendChild(kv.el);
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 360 90');svg.setAttribute('class','inst');svg.style.marginTop='10px';svg.innerHTML='<line x1="30" y1="45" x2="330" y2="45" stroke="#4a5767"/><line id="zero" x1="180" y1="20" x2="180" y2="70" stroke="#e4ebf2" stroke-dasharray="3 3"/><rect id="ci" x="180" y="38" width="0" height="14" fill="#3fe0a0" opacity=".8" style="transition:all .6s"/><circle id="pt" cx="180" cy="45" r="5" fill="#fff" style="transition:all .6s"/><text x="180" y="84" fill="#8d9bab" font-size="10" text-anchor="middle" font-family="monospace">0 = no effect</text><text x="30" y="84" fill="#8d9bab" font-size="10" font-family="monospace">−30%</text><text x="330" y="84" fill="#8d9bab" font-size="10" text-anchor="end" font-family="monospace">+60%</text><text id="sigT" x="180" y="14" fill="#e4ebf2" font-size="11" text-anchor="middle" font-family="monospace">95% confidence interval</text>';b3.appendChild(svg);R.appendChild(b3);
+ const b4=Box('Verdict');const vb=h('div','btns');[['approve','Approve Serum X','ok'],['more','Run a larger trial',''],['reject','Reject Serum X','warn']].forEach(([k,l,c])=>{const b=h('button','btn '+c,l);b.onclick=()=>verdict(k);vb.appendChild(b);});b4.appendChild(vb);R.appendChild(b4);
+ function verdict(k){if(!res){Sfx.warn();Comms.log('Run a trial before a verdict','w');return;}let s;if(st.mode==='doc'&&res.mode==='doc'){s={approve:.1,reject:.2,more:.5}[k];}else if(res.p<.05){s={approve:1,more:.6,reject:.2}[k];}else{s={approve:.3,more:1,reject:.5}[k];}
+  C.finish(s,['Last trial: '+(res.mode==='rand'?'randomised':"doctor's choice")+', n='+res.n+', difference '+(res.d*100).toFixed(1)+' points, p='+res.p.toFixed(3)+'.',res.mode==='doc'?'Doctor-chosen groups differ in baseline health, so the gap is inflated — randomisation balances hidden differences.':'Randomised assignment makes the groups comparable on average.',res.p<.05?'The 95% interval excludes zero: evidence of benefit.':'The interval includes zero: the trial is too small to tell. A larger randomised trial is the honest answer.']);}
+ go.onclick=()=>{const r=rng(Math.floor(Math.random()*1e9));const n=st.n;const pts=Array.from({length:n},()=>({h:r(),s:0,rec:false}));
+  if(st.mode==='rand'){const idx=pts.map((_,i)=>i);for(let i=n-1;i>0;i--){const j=Math.floor(r()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}idx.slice(0,n/2).forEach(i=>pts[i].s=1);}else{[...pts].sort((a,b)=>b.h-a.h).slice(0,n/2).forEach(p=>p.s=1);}
+  pts.forEach(p=>p.rec=r()<clamp(.25+.30*p.h+.15*p.s,0,1));pts.sort((a,b)=>a.s-b.s);
+  const A=pts.filter(p=>p.s),Pl=pts.filter(p=>!p.s);const p1=A.filter(p=>p.rec).length/A.length,p0=Pl.filter(p=>p.rec).length/Pl.length,d=p1-p0;
+  const pp=(A.filter(p=>p.rec).length+Pl.filter(p=>p.rec).length)/n,se0=Math.sqrt(pp*(1-pp)*(2/(n/2))),z=d/se0,pv=2*(1-ncdf(Math.abs(z)));const se=Math.sqrt(p1*(1-p1)/A.length+p0*(1-p0)/Pl.length);
+  res={pts,n,mode:st.mode,d,p:pv,lo:d-1.96*se,hi:d+1.96*se,p1,p0};ran++;anim=0;Sfx.scan();
+  Anim.tween(2.2,q=>{anim=q;},()=>{Sfx.chime();});
+  countTo(kv.els.a,p1*100,v=>v.toFixed(0)+'%');countTo(kv.els.b,p0*100,v=>v.toFixed(0)+'%');countTo(kv.els.d,d*100,v=>(v>=0?'+':'')+v.toFixed(1)+'%');countTo(kv.els.p,pv,v=>v<.001?'<0.001':v.toFixed(3));
+  const X=v=>180+clamp(v,-.3,.6)/.45*150*(v<0?1:1)*.5;const xs=v=>30+(clamp(v,-.3,.6)+.3)/.9*300;$('#ci',svg).setAttribute('x',xs(res.lo));$('#ci',svg).setAttribute('width',Math.max(2,xs(res.hi)-xs(res.lo)));$('#ci',svg).setAttribute('fill',pv<.05?'#3fe0a0':'#e2b24c');$('#pt',svg).setAttribute('cx',xs(d));$('#zero',svg).setAttribute('x1',xs(0));$('#zero',svg).setAttribute('x2',xs(0));
+  $('#sigT',svg).textContent=pv<.05?'Statistically significant (p<0.05)':'Not significant — interval spans zero';$('#sigT',svg).setAttribute('fill',pv<.05?'#3fe0a0':'#e2b24c');};
+ Anim.add((dt,t)=>{const x=cv.ctx,w=cv.w,hh=cv.h;x.clearRect(0,0,w,hh);if(!res){x.fillStyle='#8d9bab';x.font='12px monospace';x.textAlign='center';x.fillText('Rack empty — configure and run a trial',w/2,hh/2);return;}
+  const n=res.n,cols=Math.ceil(Math.sqrt(n*w/hh)),rows=Math.ceil(n/cols),cw=w/cols,ch=hh/rows,tw=Math.min(cw*.55,16),th=Math.min(ch*.8,44);
+  res.pts.forEach((p,i)=>{const cx=(i%cols)*cw+cw/2,cy=Math.floor(i/cols)*ch+ch/2;const d0=i/n*.5;const a=clamp((anim-d0)/.5,0,1);x.strokeStyle='rgba(180,200,220,.4)';x.lineWidth=1;x.strokeRect(cx-tw/2,cy-th/2,tw,th);
+   const lvl=p.rec?.85:.25;x.fillStyle=p.rec?'#3fe0a0':'#ff5d62';x.globalAlpha=.75;const fh=th*lvl*a;x.fillRect(cx-tw/2+1,cy+th/2-fh,tw-2,fh);x.globalAlpha=1;x.fillStyle=p.s?'#62e3ff':'#cdd8e4';x.fillRect(cx-tw/2,cy-th/2-3,tw,3);});
+  if(anim<1){const ax=anim*w;x.strokeStyle='rgba(98,227,255,.5)';x.beginPath();x.moveTo(ax,0);x.lineTo(ax,hh);x.stroke();}});}
+
+/* ---- 08 Counting Tomorrow's Beds ---- */
+function M8(B,C){
+ const r=rng(808),n=30;const pts=Array.from({length:n},()=>{const x=10+r()*100;return{x,y:9+.55*x+gauss(r)*6};});
+ const mx=avg(pts.map(p=>p.x)),my=avg(pts.map(p=>p.y));const bSl=pts.reduce((s,p)=>s+(p.x-mx)*(p.y-my),0)/pts.reduce((s,p)=>s+(p.x-mx)**2,0),bIn=my-bSl*mx;
+ const sse=(m,c)=>pts.reduce((s,p)=>s+(p.y-(m*p.x+c))**2,0);const sseOpt=sse(bSl,bIn);const XF=135,CAP=85;
+ const q={m:.2,c:30,dm:.2,dc:30,hint:false};
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1=Box('Predictive plane — daily new cases vs occupied beds','live residuals');const cv=mkCanvas(b1,330);L.appendChild(b1);
+ const b2=Box('Regression controls');const dm=Dial({label:'Slope β₁',min:0,max:1.2,step:.01,val:.2,fmt:v=>v.toFixed(2),onChange:v=>{q.m=v;upd();}});const dc=Dial({label:'Intercept β₀',min:-20,max:40,step:.5,val:30,fmt:v=>v.toFixed(1),onChange:v=>{q.c=v;upd();}});b2.append(dm.el,dc.el);
+ const hb=h('button','btn','Reveal least-squares fit');b2.appendChild(hb);R.appendChild(b2);
+ const b3=Box('Fit quality');const kv=Kv([['sse','Your SSE','a'],['opt','Best SSE','g'],['pred','Beds @ 135 cases','c'],['over','vs capacity 85','r']]);b3.appendChild(kv.el);
+ const bar=h('div','bar');bar.style.cssText='width:100%;height:10px;margin-top:10px';bar.innerHTML='<i></i>';b3.appendChild(bar);b3.appendChild(h('div','note','<br>Fit gauge: full bar = matches the least-squares line.'));
+ const go=h('button','btn pri','Submit Forecast');go.style.marginTop='10px';b3.appendChild(go);R.appendChild(b3);
+ function upd(){const s=sse(q.m,q.c);const pr=q.m*XF+q.c;countTo(kv.els.sse,s,v=>v.toFixed(0));countTo(kv.els.opt,sseOpt,v=>v.toFixed(0));countTo(kv.els.pred,pr,v=>v.toFixed(1));countTo(kv.els.over,pr-CAP,v=>(v>=0?'+':'')+v.toFixed(1));const f=clamp(sseOpt/s,0,1);bar.firstChild.style.transform='scaleX('+f+')';bar.firstChild.style.background=f>.9?'var(--em)':f>.6?'var(--am)':'var(--co)';}
+ hb.onclick=()=>{q.hint=true;q.hintT=0;Sfx.scan();};
+ go.onclick=()=>{const s=sse(q.m,q.c),pr=q.m*XF+q.c,pO=bSl*XF+bIn;let sc=.7*clamp(sseOpt/s,0,1)+.3*clamp(1-Math.abs(pr-pO)/15,0,1);if(q.hint)sc=Math.min(sc,.85);
+  C.finish(sc,['Your line: beds = '+q.c.toFixed(1)+' + '+q.m.toFixed(2)+'·cases. Least squares: '+bIn.toFixed(1)+' + '+bSl.toFixed(2)+'·cases.','Forecast at 135 cases: '+pr.toFixed(1)+' beds (best estimate '+pO.toFixed(1)+', capacity '+CAP+').','Least squares minimises the sum of squared residuals — the vertical gaps drawn on the plane.',q.hint?'You used the reveal, so the score is capped at 85.':'You fitted it by hand — the residual segments are your instrument.']);};
+ Anim.add((dt,t)=>{q.dm+=(q.m-q.dm)*Math.min(1,dt*8);q.dc+=(q.c-q.dc)*Math.min(1,dt*8);const x=cv.ctx,w=cv.w,hh=cv.h,px=40,py=14,pw=w-px-14,ph=hh-py-30;x.clearRect(0,0,w,hh);const XM=150,YM=140;const X=v=>px+v/XM*pw,Y=v=>py+ph-v/YM*ph;
+  x.strokeStyle='rgba(141,155,171,.14)';x.fillStyle='#8d9bab';x.font='10px monospace';x.textAlign='right';for(let v=0;v<=140;v+=20){x.beginPath();x.moveTo(px,Y(v));x.lineTo(px+pw,Y(v));x.stroke();x.fillText(v,px-5,Y(v)+3);}x.textAlign='center';for(let v=0;v<=150;v+=25){x.fillText(v,X(v),hh-14);x.beginPath();x.moveTo(X(v),py);x.lineTo(X(v),py+ph);x.stroke();}
+  x.fillText('daily new cases →',px+pw/2,hh-2);x.strokeStyle='rgba(255,93,98,.6)';x.setLineDash([5,4]);x.beginPath();x.moveTo(px,Y(CAP));x.lineTo(px+pw,Y(CAP));x.stroke();x.beginPath();x.moveTo(X(XF),py);x.lineTo(X(XF),py+ph);x.stroke();x.setLineDash([]);x.fillStyle='#ff5d62';x.textAlign='left';x.fillText('capacity '+CAP,px+4,Y(CAP)-4);x.fillText('tomorrow',X(XF)-48,py+10);
+  if(q.hint){q.hintT=Math.min(1,(q.hintT||0)+dt*.8);const k=ease(q.hintT);x.strokeStyle='rgba(226,178,76,.8)';x.lineWidth=2;x.setLineDash([6,4]);x.beginPath();x.moveTo(X(0),Y(bIn));x.lineTo(X(lerp(0,XM,k)),Y(bIn+bSl*lerp(0,XM,k)));x.stroke();x.setLineDash([]);}
+  pts.forEach(p=>{const yl=q.dm*p.x+q.dc;const res=p.y-yl;x.strokeStyle=res>0?'rgba(98,227,255,.6)':'rgba(255,93,98,.6)';x.lineWidth=1+Math.min(2,Math.abs(res)/6);x.beginPath();x.moveTo(X(p.x),Y(p.y));x.lineTo(X(p.x),Y(yl));x.stroke();});
+  x.lineWidth=2.5;x.strokeStyle='#62e3ff';x.beginPath();x.moveTo(X(0),Y(q.dc));x.lineTo(X(XM),Y(q.dm*XM+q.dc));x.stroke();pts.forEach(p=>{x.fillStyle='#e4ebf2';x.beginPath();x.arc(X(p.x),Y(p.y),3.2,0,6.283);x.fill();});
+  const fy=q.dm*XF+q.dc;x.fillStyle='#62e3ff';x.beginPath();x.arc(X(XF),Y(fy),5+Math.sin(t*4),0,6.283);x.fill();});
+ upd();}
+
+/* ---- 09 The Quarantine Threshold ---- */
+function M9(B,C){
+ const r=rng(909),n=70;const D=Array.from({length:n},()=>{const s=r()*10;return{s,y:r()<sig(1.3*(s-5.6))?1:0};});
+ let b0=0,b1=0;for(let it=0;it<30;it++){let g0=0,g1=0,h00=0,h01=0,h11=0;D.forEach(d=>{const p=sig(b0+b1*d.s),w=p*(1-p);g0+=d.y-p;g1+=(d.y-p)*d.s;h00+=w;h01+=w*d.s;h11+=w*d.s*d.s;});const det=h00*h11-h01*h01||1e-9;b0+=(h11*g0-h01*g1)/det;b1+=(-h01*g0+h00*g1)/det;}
+ D.forEach(d=>d.p=sig(b0+b1*d.s));D.sort((a,b)=>a.s-b.s);const COST_FN=5,COST_FP=1;
+ const conf=t=>{let tp=0,fp=0,fn=0,tn=0;D.forEach(d=>{const pos=d.p>=t;if(pos&&d.y)tp++;else if(pos)fp++;else if(d.y)fn++;else tn++;});return{tp,fp,fn,tn,cost:COST_FN*fn+COST_FP*fp};};
+ let best=1e9,bestT=.5;for(let t=.02;t<=.98;t+=.01){const c=conf(t).cost;if(c<best){best=c;bestT=t;}}
+ const st={t:.5,dt:.5,flash:0};
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1_=Box('Docking security — probability curve','70 arriving crew · red ring = truly infected');const cv=mkCanvas(b1_,320);L.appendChild(b1_);
+ const sl=Slider({label:'Quarantine threshold  P(infected) ≥',min:.02,max:.98,step:.01,val:.5,fmt:v=>(v*100).toFixed(0)+'%',onInput:v=>{st.t=v;st.flash=1;upd();}});b1_.appendChild(sl.el);
+ const b2=Box('Confusion matrix');const mx=h('div','mx');mx.innerHTML='<div class="hd"></div><div class="hd">Quarantined</div><div class="hd">Admitted</div><div class="hd">Infected</div><div class="tp"><b id="mtp">0</b>caught</div><div class="fn"><b id="mfn">0</b>missed</div><div class="hd">Healthy</div><div class="fp"><b id="mfp">0</b>false alarm</div><div class="tn"><b id="mtn">0</b>cleared</div>';b2.appendChild(mx);R.appendChild(b2);
+ const b3=Box('Operational cost','a missed infection costs 5, a needless quarantine costs 1');const kv=Kv([['cost','Cost','r'],['sens','Sensitivity','c'],['spec','Specificity','g'],['ppv','Precision','a']]);b3.appendChild(kv.el);const go=h('button','btn pri','Deploy Barrier');go.style.marginTop='10px';b3.appendChild(go);b3.appendChild(h('div','note','<br>Model: logit P = '+b0.toFixed(2)+' + '+b1.toFixed(2)+' × symptom score (fitted live from the arrivals).'));R.appendChild(b3);
+ function upd(){const c=conf(st.t);$('#mtp',mx).textContent=c.tp;$('#mfn',mx).textContent=c.fn;$('#mfp',mx).textContent=c.fp;$('#mtn',mx).textContent=c.tn;countTo(kv.els.cost,c.cost);countTo(kv.els.sens,c.tp/Math.max(1,c.tp+c.fn)*100,v=>v.toFixed(0)+'%');countTo(kv.els.spec,c.tn/Math.max(1,c.tn+c.fp)*100,v=>v.toFixed(0)+'%');countTo(kv.els.ppv,c.tp/Math.max(1,c.tp+c.fp)*100,v=>v.toFixed(0)+'%');}
+ go.onclick=()=>{const c=conf(st.t);const sc=clamp(1-(c.cost-best)/(.6*best+8),0,1);Sfx.alarm();C.finish(sc,['Your threshold '+Math.round(st.t*100)+'% cost '+c.cost+'; the cheapest threshold (~'+Math.round(bestT*100)+'%) costs '+best+'.','Lowering the threshold catches more infected crew (higher sensitivity) at the price of more false alarms.','When a miss is costlier than a false alarm, the best cutoff sits well below 50%.','Logistic regression outputs probabilities; the threshold is a policy decision, not a statistic.']);};
+ Anim.add((dt,t)=>{st.dt+=(st.t-st.dt)*Math.min(1,dt*10);st.flash=Math.max(0,st.flash-dt*2);const x=cv.ctx,w=cv.w,hh=cv.h,px=36,py=12,pw=w-px-12,ph=hh-py-30;x.clearRect(0,0,w,hh);const X=v=>px+v/10*pw,Y=v=>py+ph-v*ph;
+  const xs=(Math.log(st.dt/(1-st.dt))-b0)/b1;const bx=X(clamp(xs,0,10));x.fillStyle='rgba(255,93,98,.10)';x.fillRect(bx,py,px+pw-bx,ph);x.fillStyle='rgba(63,224,160,.05)';x.fillRect(px,py,bx-px,ph);
+  x.strokeStyle='rgba(141,155,171,.15)';x.fillStyle='#8d9bab';x.font='10px monospace';x.textAlign='right';for(let v=0;v<=1;v+=.25){x.beginPath();x.moveTo(px,Y(v));x.lineTo(px+pw,Y(v));x.stroke();x.fillText((v*100).toFixed(0)+'%',px-4,Y(v)+3);}x.textAlign='center';for(let v=0;v<=10;v+=2)x.fillText(v,X(v),hh-14);x.fillText('symptom score →',px+pw/2,hh-2);
+  x.strokeStyle='#62e3ff';x.lineWidth=2.5;x.beginPath();for(let i=0;i<=100;i++){const v=i/10;const yy=Y(sig(b0+b1*v));i?x.lineTo(X(v),yy):x.moveTo(X(v),yy);}x.stroke();
+  x.strokeStyle='rgba(255,93,98,'+(.7+.3*st.flash)+')';x.lineWidth=2+3*st.flash;x.setLineDash([6,4]);x.lineDashOffset=-t*20;x.beginPath();x.moveTo(bx,py);x.lineTo(bx,py+ph);x.stroke();x.setLineDash([]);x.fillStyle='#ff5d62';x.textAlign='left';x.fillText('QUARANTINE BARRIER',Math.min(bx+4,px+pw-110),py+10);
+  D.forEach((d,i)=>{const q=d.p>=st.dt;const jy=Y(d.p)+(i%2?-1:1)*8;x.fillStyle=q?'#ffb4b6':'#9fb4c7';x.beginPath();x.arc(X(d.s),Y(d.p),3,0,6.283);x.fill();if(d.y){x.strokeStyle='#ff5d62';x.lineWidth=1.3;x.beginPath();x.arc(X(d.s),Y(d.p),6,0,6.283);x.stroke();}if(q){x.strokeStyle='rgba(255,93,98,.35)';x.lineWidth=1;x.beginPath();x.moveTo(X(d.s),Y(d.p)-4);x.lineTo(X(d.s),Y(d.p)-12);x.stroke();}});});
+ upd();}
+
+/* ---- 10 Protocol Zero ---- */
+//SIM-START
+const P0={N:[{id:'C',name:'Central Command',x:.5,y:.12},{id:'M',name:'Medical Wing',x:.16,y:.34},{id:'O',name:'Observation Lab',x:.84,y:.34},{id:'P',name:'Probability Chamber',x:.12,y:.74},{id:'L',name:'Clinical Lab',x:.38,y:.58},{id:'I',name:'Predictive Centre',x:.62,y:.58},{id:'K',name:'Containment Deck',x:.88,y:.76}],
+ E:[[0,1],[0,2],[0,4],[0,5],[1,3],[1,4],[4,5],[2,5],[2,6],[5,6]],BETA:.12,MIX:.25,GAM:.012,
+ newState(){return{n:P0.N.map((_,i)=>({S:100-(i===2?9:i===1?3:0),I:i===2?9:i===1?3:0,R:0,X:0,Z:0,sealed:false,serum:0}))};},
+ step(st){const f=st.n.map((n,i)=>{let force=n.I;P0.E.forEach(([a,b])=>{if(a===i||b===i){const o=st.n[a===i?b:a];const w=(n.sealed||o.sealed)?.06:1;force+=P0.MIX*w*o.I;}});return P0.BETA*force/100;});
+  st.n.forEach((n,i)=>{const ni=Math.min(n.S,n.S*(1-Math.exp(-f[i])));const g=P0.GAM*(n.serum>0?5:1);const rec=n.I*g;const rz=n.Z*.01;n.S-=ni;n.I+=ni-rec;n.R+=rec+rz;n.Z-=rz;});}};
+//SIM-END
+function M10(B,C){
+ const Nn=P0.N,AP0=2+(Object.values(S.best).filter(v=>v>=.75).length>=6?1:0);
+ let st=P0.newState(),phase=0,ap=AP0,sel=2,hour=0,running=false,beds=60,evac=0,overflowH=0,done=false;const log=[];const crit={};
+ const row=h('div','row');const L=h('div','col'),R=h('div','col');row.append(L,R);B.appendChild(row);
+ const b1=Box('Aegis Station — live containment map','tap a sector to select');const cv=mkCanvas(b1,420);L.appendChild(b1);
+ const kv=Kv([['clock','Station time','c'],['inf','Active cases','r'],['bed','Bed demand / cap','a'],['stab','Stability','g']]);b1.appendChild(kv.el);
+ const b2=Box('Command decisions','checkpoint');const hd=$('.ph b',b2);const sInfo=h('div','note');b2.appendChild(sInfo);
+ const mk=(label,cls,fn)=>{const b=h('button','btn '+cls,label);b.style.marginRight='6px';b.style.marginBottom='6px';b.onclick=()=>{if(running||done)return;if(ap<=0){Sfx.warn();Comms.log('No action points left — run the next 6 hours','w');return;}fn();};return b;};
+ const acts=h('div');
+ acts.append(mk('Seal sector barrier','',()=>{const n=st.n[sel];if(n.sealed)return;n.sealed=true;spend('Barrier raised at '+Nn[sel].name,'g');}),
+  mk('Mass test & isolate','',()=>{const n=st.n[sel];const mv=n.I*.6;n.I-=mv;n.X+=mv;n.Z+=0;spend('Isolated '+mv.toFixed(0)+' cases in '+Nn[sel].name,'g');}),
+  mk('Administer Serum X','ok',()=>{st.n[sel].serum=1;spend('Serum X deployed in '+Nn[sel].name,'g');}),
+  mk('Evacuate healthy crew','',()=>{const n=st.n[sel];const mv=n.S*.6;n.S-=mv;evac+=mv;spend('Evacuated '+mv.toFixed(0)+' healthy crew from '+Nn[sel].name,'w');}),
+  mk('Expand ward beds (+25)','',()=>{beds+=25;spend('Ward expanded to '+beds+' beds','g');}));
+ b2.appendChild(acts);const runB=h('button','btn pri','Run next 6 hours');b2.appendChild(runB);L.appendChild(b2);
+ const b3=Box('Forecast instrument','beds ≈ 0.45 × active cases + 4 (from the Predictive Centre)');const fv=h('div','note');b3.appendChild(fv);R.appendChild(b3);
+ const b4=Box('Station feed');const feed=h('div','note');feed.style.cssText='max-height:260px;overflow:auto';b4.appendChild(feed);R.appendChild(b4);
+ function say(t,c){log.unshift('<div style="color:'+({g:'#3fe0a0',w:'#e2b24c',b:'#ff5d62'}[c]||'#8d9bab')+'">'+String(Math.floor(hour)).padStart(2,'0')+'h · '+t+'</div>');feed.innerHTML=log.slice(0,30).join('');Comms.log(t,c);}
+ function spend(t,c){ap--;Sfx.chime();say(t,c);refresh();}
+ function totals(){let I=0,X=0,E=0;st.n.forEach(n=>{I+=n.I;X+=n.X;E+=n.I+n.X+n.R+n.Z;});return{I,X,E};}
+ function stability(){const t=totals();const att=(t.E+0)/700;return clamp(100*(1-att*1.15)-Math.min(15,overflowH*.9)-evac/700*10,0,100);}
+ function refresh(){const t=totals();const dem=.45*(t.I+t.X)+4;kv.els.clock.textContent='T+'+String(Math.floor(hour)).padStart(2,'0')+':00';countTo(kv.els.inf,t.I+t.X,v=>v.toFixed(0));kv.els.bed.textContent=dem.toFixed(0)+' / '+beds;kv.els.bed.className=dem>beds?'r':'a';countTo(kv.els.stab,stability(),v=>v.toFixed(0));
+  const n=st.n[sel];hd.textContent='Checkpoint '+(phase+1)+' of 4 · AP '+ap;sInfo.innerHTML='Selected: <b>'+Nn[sel].name+'</b> — healthy '+n.S.toFixed(0)+', infected '+n.I.toFixed(0)+', isolated '+n.X.toFixed(0)+', recovered '+n.R.toFixed(0)+(n.sealed?' · <span class="pill" style="color:#e2b24c">SEALED</span>':'')+(n.serum?' · <span class="pill" style="color:#3fe0a0">SERUM</span>':'');
+  fv.innerHTML='Projected demand '+dem.toFixed(0)+' beds vs capacity '+beds+' → '+(dem>beds?'<b style="color:#ff5d62">OVERFLOW '+(dem-beds).toFixed(0)+'</b>':'<b style="color:#3fe0a0">within capacity</b>')+'.<br>Use barriers and isolation early: growth is exponential until susceptibles run out.';}
+ runB.onclick=()=>{if(running||done)return;running=true;runB.disabled=true;Sfx.scan();Clock.mult=40;const h0=hour;let sh=0;
+  Anim.tween(5,p=>{const target=Math.floor(p*6);while(sh<target){sh++;P0.step(st);hour=h0+sh;st.n.forEach(n=>{if(n.serum>0)n.serum-=1/6;});const t=totals();if(.45*(t.I+t.X)+4>beds)overflowH++;
+    st.n.forEach((n,i)=>{const fr=(n.I+n.X)/100;if(fr>.3&&!crit[i]){crit[i]=1;say(Nn[i].name+' above 30% infected','b');Sfx.alarm();}});}
+   refresh();},()=>{Clock.mult=1;running=false;hour=h0+6;st.n.forEach(n=>{n.serum=0;});phase++;if(phase>=4)end();else{ap=AP0;runB.disabled=false;say('Checkpoint '+(phase+1)+' — '+AP0+' actions available','w');refresh();}});};
+ function end(){done=true;const stab=stability();const sc=clamp(stab/85,0,1);const t=totals();const lines=['Final stability '+stab.toFixed(0)+'%. Cumulative infected '+Object.values(st.n).reduce((s,n)=>s+n.I+n.X+n.R+n.Z,0).toFixed(0)+' of 700 crew.',overflowH?'Ward overflow lasted '+overflowH+' hours — forecasting beds earlier avoids it.':'Beds kept pace with demand — the regression forecast paid off.',
+   'Barriers and isolation early beat treatment late: transmission is multiplicative.','Skills used: data cleaning, confounding, Bayes (false alarms), trial evidence, regression forecasts and threshold policy.'];setTimeout(()=>C.finish(sc,lines),600);}
+ // map canvas
+ const parts=Array.from({length:70},()=>({e:Math.floor(Math.random()*P0.E.length),t:Math.random(),dir:Math.random()<.5?1:-1,v:.12+Math.random()*.2}));
+ const P=(i,w,hh)=>({x:Nn[i].x*w,y:Nn[i].y*hh+10});
+ cv.c.addEventListener('click',e=>{const b=cv.c.getBoundingClientRect();const mx=e.clientX-b.left,my=e.clientY-b.top;Nn.forEach((n,i)=>{const p=P(i,cv.w,cv.h);if(Math.hypot(mx-p.x,my-p.y)<32){sel=i;Sfx.sel();refresh();}});});
+ Anim.add((dt,t)=>{const x=cv.ctx,w=cv.w,hh=cv.h;x.clearRect(0,0,w,hh);
+  P0.E.forEach(([a,b],ei)=>{const A=P(a,w,hh),Bp=P(b,w,hh);const sealed=st.n[a].sealed||st.n[b].sealed;x.strokeStyle=sealed?'rgba(226,178,76,.7)':'rgba(141,155,171,.35)';x.lineWidth=sealed?3:6;x.beginPath();x.moveTo(A.x,A.y);x.lineTo(Bp.x,Bp.y);x.stroke();x.strokeStyle='rgba(6,12,22,.9)';x.lineWidth=sealed?1:3;x.beginPath();x.moveTo(A.x,A.y);x.lineTo(Bp.x,Bp.y);x.stroke();
+   if(sealed){const mxp=(A.x+Bp.x)/2,myp=(A.y+Bp.y)/2;x.fillStyle=Math.sin(t*8)>0?'#e2b24c':'#7a5c18';x.fillRect(mxp-8,myp-3,16,6);}});
+  parts.forEach(p=>{const [a,b]=P0.E[p.e];const src=p.dir>0?a:b,dst=p.dir>0?b:a;const inf=st.n[src].I/100;if(Math.random()<.003)p.e=Math.floor(Math.random()*P0.E.length);p.t+=dt*p.v*(running?2:1);if(p.t>1){p.t=0;p.dir=Math.random()<.5?1:-1;}
+   const sealed=st.n[a].sealed||st.n[b].sealed;const lim=sealed?.5:1;const tt=Math.min(p.t,lim);if(inf<.03)return;const A=P(src,w,hh),Bp=P(dst,w,hh);x.fillStyle='rgba(255,93,98,'+clamp(inf*1.5,.15,.8)+')';x.beginPath();x.arc(lerp(A.x,Bp.x,tt),lerp(A.y,Bp.y,tt),2.2,0,6.283);x.fill();});
+  Nn.forEach((nd,i)=>{const n=st.n[i],p=P(i,w,hh);const fr=clamp((n.I+n.X)/100,0,1);const col=fr<.1?'63,224,160':fr<.3?'226,178,76':'255,93,98';
+   const pr=26+fr*40+Math.sin(t*2+i)*3*fr;const g=x.createRadialGradient(p.x,p.y,6,p.x,p.y,pr);g.addColorStop(0,'rgba('+col+','+(.12+fr*.4)+')');g.addColorStop(1,'rgba('+col+',0)');x.fillStyle=g;x.fillRect(p.x-pr,p.y-pr,pr*2,pr*2);
+   drawChamfer(x,p.x-26,p.y-18,52,36,8);x.fillStyle='rgba(8,16,30,.95)';x.fill();x.strokeStyle=i===sel?'#62e3ff':'rgba('+col+',.8)';x.lineWidth=i===sel?2.5:1.5;x.stroke();
+   if(n.sealed){x.strokeStyle='#e2b24c';x.lineWidth=2;x.setLineDash([4,3]);x.strokeRect(p.x-32,p.y-24,64,48);x.setLineDash([]);}
+   const dots=20;for(let k=0;k<dots;k++){const a=k/dots*6.283+t*.15,rr=33;const cnt=k/dots*100;const c=cnt<n.I?'#ff5d62':cnt<n.I+n.X?'#9a7bff':cnt<n.I+n.X+n.R?'#3fe0a0':cnt<n.I+n.X+n.R+n.S?'#cdd8e4':'#2a3a52';x.fillStyle=c;x.beginPath();x.arc(p.x+Math.cos(a)*rr,p.y+Math.sin(a)*rr*.75,1.8,0,6.283);x.fill();}
+   x.fillStyle='#e4ebf2';x.font='9px monospace';x.textAlign='center';x.fillText(nd.name.toUpperCase(),p.x,p.y-2);x.fillStyle='rgb('+col+')';x.fillText(Math.round(n.I+n.X)+'%',p.x,p.y+10);});
+  if(evac>0){x.fillStyle='#62e3ff';x.font='10px monospace';x.textAlign='right';x.fillText('LIFEBOATS: '+evac.toFixed(0)+' crew',w-10,hh-8);}});
+ refresh();say('Outbreak confirmed in Observation Lab and Medical Wing. 24 hours to Protocol Zero.','w');}
+
+/* ---------------- mission registry ---------------- */
+const MISSIONS=[
+ {id:1,title:'Noise in the Logs',env:'Records Processing Chamber',wing:'Medical Wing',style:'archive',acc:'#62e3ff',from:'DR. OKAFOR — CHIEF MEDICAL OFFICER',brief:'The patient archive is contaminated: impossible ages, a Fahrenheit reading in a Celsius field, and records filed twice. Route every record to the verified archive or the quarantine bin before we run any statistics.',hint:'Ask of each record: is the value physically possible, in the right unit, and is the ID repeated? Keep exactly one copy of duplicates.',learn:'Clean data first: range checks, unit checks, de-duplication.',init:M1},
+ {id:2,title:'The Missing Vitals',env:'Sensor Calibration Laboratory',wing:'Medical Wing',style:'calib',acc:'#e2b24c',from:'ENG. TALLIS — SENSOR ENGINEER',brief:'The thermal sensor dropped five hourly readings and one spike (43.8 °C) is not human. Choose how to treat the outlier and the gaps so the mean and spread reflect the true crew temperature.',hint:'Compare mean and median in the gauge. Which one moves when the spike is present?',learn:'The median resists outliers; imputing with the centre keeps the mean but shrinks variance.',init:M2},
+ {id:3,title:'The Cafeteria Clue',env:'Surveillance & Observation Centre',wing:'Observation Lab',style:'surveil',acc:'#62e3ff',from:'AEGIS — STATION INTELLIGENCE',brief:'Infections are scattered across all sectors. Cross-reference what each crew member ate. Find the meal item whose eaters are far more likely to be infected, and put a food hold on it.',hint:'Relative risk = attack rate among those who ate ÷ attack rate among those who did not. The highest RR is the strongest lead.',learn:'Compare exposed vs unexposed rates; correlated bystander items can mislead.',init:M3},
+ {id:4,title:'The Confounding Trap',env:'Multi-Deck Investigation Room',wing:'Observation Lab',style:'decks',acc:'#e2b24c',from:'DR. OKAFOR — CHIEF MEDICAL OFFICER',brief:'Coffee drinkers are catching the infection far more often. The mess is panicking. Before you ban the coffee, split the crew by shift and see what is really going on.',hint:'Toggle stratification. If the risk ratio collapses toward 1 inside each shift, a third variable explains the pattern.',learn:'A confounder (night shift on a failed-vent deck) can create a false link; stratify to unmask it.',init:M4},
+ {id:5,title:'The Airlock Gamble',env:'Docking & Medical Screening Chamber',wing:'Probability Chamber',style:'dock',acc:'#3fe0a0',from:'CMDR. REYES — DOCKING CHIEF',brief:'Three shuttles are docking and we hold only twelve rapid test kits. Allocate them to find the most true infections. The distribution plot shows how uncertain any plan really is.',hint:'Each kit finds an infection with probability = prevalence × sensitivity. You cannot test more people than a shuttle carries.',learn:'Expected value guides decisions under uncertainty; distributions show the spread around it.',init:M5},
+ {id:6,title:'The False Alarm Paradox',env:'Population Diagnostic Analysis Centre',wing:'Probability Chamber',style:'grid',acc:'#9a7bff',from:'DR. OKAFOR — CHIEF MEDICAL OFFICER',brief:'The scanner is 99% sensitive and 95% specific — yet the crew is terrified of every positive. Scan the population, then estimate the chance a positive is truly infected.',hint:'Count the cells: how many positives are real, how many are false alarms from the large healthy majority?',learn:'Bayes: with low prevalence most positives are false alarms (positive predictive value is low).',init:M6},
+ {id:7,title:'Miracle Serum X',env:'Advanced Clinical Research Laboratory',wing:'Clinical Research Lab',style:'clinical',acc:'#3fe0a0',from:'DR. VOSS — CLINICAL LEAD',brief:'Serum X looks promising. Design a trial, run it, and tell Command whether to approve it. Beware: a doctor who hand-picks patients can fake a miracle.',hint:'Randomise, and use enough patients. Check whether the confidence interval for the difference includes zero.',learn:'Randomisation prevents bias; sample size and confidence intervals decide whether an effect is believable.',init:M7},
+ {id:8,title:"Counting Tomorrow's Beds",env:'Predictive Medical Intelligence Centre',wing:'Predictive Intelligence Centre',style:'predict',acc:'#62e3ff',from:'AEGIS — STATION INTELLIGENCE',brief:'Bed occupancy follows daily new cases. Fit a line through the scatter by hand using the dials, watch the residuals shrink, and forecast what 135 new cases will do to the wards.',hint:'Minimise the total length of the residual segments. The least-squares line balances positive and negative gaps.',learn:'Linear regression minimises squared residuals; forecasts extrapolate the fitted line.',init:M8},
+ {id:9,title:'The Quarantine Threshold',env:'Docking Security Command Centre',wing:'Predictive Intelligence Centre',style:'security',acc:'#ff5d62',from:'CMDR. REYES — DOCKING CHIEF',brief:'A logistic model converts each arrival\u2019s symptom score into an infection probability. Set the quarantine threshold. Missing an infected person is five times worse than quarantining a healthy one.',hint:'Slide the barrier and watch the confusion matrix. Lower the threshold until extra false alarms cost more than the misses they prevent.',learn:'Logistic regression gives probabilities; the threshold trades false negatives against false positives.',init:M9},
+ {id:10,title:'Protocol Zero',env:'Aegis Station — All Decks',wing:'Containment Deck',style:'station',acc:'#ff5d62',bio:'255,93,98',from:'DR. OKAFOR — CHIEF MEDICAL OFFICER',brief:'The outbreak is spreading deck to deck. You have four checkpoints across 24 hours. Seal corridors, isolate cases, deploy Serum X, evacuate healthy crew and expand the wards before demand overflows.',hint:'Hit the busiest sectors early. A sealed sector still infects itself, so combine barriers with isolation or serum.',learn:'Containment combines every skill: clean data, evidence, probability, forecasting and thresholds.',init:M10}
+];
+
+/* ---------------- hub (Central Command) ---------------- */
+function drawLock(x,cx,cy,col){x.save();x.strokeStyle=col;x.fillStyle=col;x.lineWidth=1.8;x.beginPath();x.arc(cx,cy-1,4,Math.PI,0);x.stroke();x.fillRect(cx-6,cy-1,12,9);x.restore();}
+function renderHub(room){
+ const hd=h('div','mhead','<span class="mno">CENTRAL COMMAND</span><h2>Aegis Station Overview</h2><span class="env">Mission briefing & strategic decisions</span>');room.appendChild(hd);
+ const b=Box('Orbital station — select a deck','holographic schematic');const cv=mkCanvas(b,360);room.appendChild(b);
+ const kv=Kv([['done','Missions filed','c'],['avg','Average score','a'],['int','Integrity','g']]);const dn=MISSIONS.filter(m=>S.best[m.id]!=null);kv.els.done.textContent=dn.length+' / 10';kv.els.avg.textContent=dn.length?Math.round(avg(dn.map(m=>S.best[m.id]))*100):'–';kv.els.int.textContent=integrity();b.appendChild(kv.el);
+ if(isGameComplete()){const gc=h('div','gcomp','Game complete — all 10 missions filed. Outbreak contained.');gc.style.marginTop='10px';b.appendChild(gc);}
+ const go=h('button','btn pri','Begin next mission');go.style.marginTop='12px';const nextM=MISSIONS.find(m=>S.best[m.id]==null)||MISSIONS[0];go.onclick=()=>goRoom(nextM.id);b.appendChild(go);
+ let hover=-1;const pos=i=>{const a=-Math.PI/2+i/10*6.283;return{x:cv.w*.5+Math.cos(a)*cv.w*.3,y:cv.h*.5+Math.sin(a)*cv.h*.34};};
+ cv.c.addEventListener('mousemove',e=>{const r=cv.c.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;hover=-1;MISSIONS.forEach((m,i)=>{const p=pos(i);if(Math.hypot(mx-p.x,my-p.y)<20)hover=i;});cv.c.style.cursor=hover>=0?(isUnlocked(MISSIONS[hover].id)?'pointer':'not-allowed'):'default';});
+ cv.c.addEventListener('click',()=>{if(hover>=0){if(isUnlocked(MISSIONS[hover].id))Sfx.sel();goRoom(MISSIONS[hover].id);}});
+ Anim.add((dt,t)=>{const x=cv.ctx,w=cv.w,hh=cv.h,cx=w/2,cy=hh/2;x.clearRect(0,0,w,hh);
+  x.strokeStyle='rgba(98,227,255,.25)';x.lineWidth=1;for(let k=1;k<=3;k++){x.beginPath();x.ellipse(cx,cy,w*.1*k,hh*.11*k,0,0,6.283);x.stroke();}
+  x.strokeStyle='rgba(141,155,171,.5)';x.lineWidth=10;x.beginPath();x.ellipse(cx,cy,w*.3,hh*.34,0,0,6.283);x.stroke();x.strokeStyle='rgba(6,12,22,.9)';x.lineWidth=6;x.stroke();
+  x.strokeStyle='rgba(98,227,255,.55)';x.lineWidth=2;x.beginPath();x.ellipse(cx,cy,w*.3,hh*.34,0,t*.4,t*.4+1.1);x.stroke();
+  for(let i=0;i<5;i++){const a=t*.2+i*1.2566;x.strokeStyle='rgba(141,155,171,.3)';x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a)*w*.3,cy+Math.sin(a)*hh*.34);x.stroke();}
+  x.fillStyle='#16233a';x.beginPath();x.arc(cx,cy,hh*.07,0,6.283);x.fill();x.strokeStyle='#62e3ff';x.stroke();x.fillStyle='#62e3ff';x.font='9px monospace';x.textAlign='center';x.fillText('COMMAND',cx,cy+3);
+  MISSIONS.forEach((m,i)=>{const p=pos(i),d=S.best[m.id]!=null,lk=!isUnlocked(m.id);const hv=hover===i&&!lk;x.fillStyle='rgba(8,16,30,.95)';x.beginPath();x.arc(p.x,p.y,hv?19:16,0,6.283);x.fill();x.strokeStyle=lk?'rgba(141,155,171,.4)':d?'#3fe0a0':m.acc;x.lineWidth=hv?3:1.8;x.stroke();
+   if(!d&&!lk){x.strokeStyle='rgba(98,227,255,'+(.25+.25*Math.sin(t*2+i))+')';x.beginPath();x.arc(p.x,p.y,22+Math.sin(t*2+i)*2,0,6.283);x.stroke();}
+   x.font='600 11px monospace';if(lk){drawLock(x,p.x,p.y,'rgba(141,155,171,.8)');}else{x.fillStyle='#e4ebf2';x.fillText(String(m.id).padStart(2,'0'),p.x,p.y+4);}
+   if(hover===i){const lb=m.title+(lk?' · LOCKED':'');x.fillStyle='rgba(6,12,22,.95)';const tw=x.measureText(lb).width+16;x.fillRect(p.x-tw/2,p.y+24,tw,18);x.fillStyle=lk?'#8d9bab':'#62e3ff';x.fillText(lb,p.x,p.y+37);}});});
+ BG.set('command','#62e3ff','62,224,160');}
+
+/* ---------------- room management ---------------- */
+function buildRail(){const rl=$('#rail');rl.innerHTML='<div class="rh">DECKS</div>';
+ const mk=(id,n,t,s)=>{const lk=!isUnlocked(id);const b=h('button','rbtn'+(S.room===id?' on':'')+(lk?' locked':''),'<span class="n">'+n+'</span><span class="t">'+t+'</span><span class="s">'+(lk?LOCK_SVG:(s||''))+'</span>');b.onclick=()=>{if(S.room!==id)goRoom(id);};b.title=lk?t+' — locked':t;if(lk)b.setAttribute('aria-disabled','true');rl.appendChild(b);};
+ mk('hub','◈','Central Command','');MISSIONS.forEach(m=>mk(m.id,String(m.id).padStart(2,'0'),m.title,S.best[m.id]!=null?Math.round(S.best[m.id]*100):''));}
+let busy=false;
+function goRoom(id){if(!isUnlocked(id)){denyLocked(id);return;}   /* enforced here for every navigation path (rail, ring nodes, debrief and hub buttons) */
+ if(busy)return;busy=true;Sfx.door();$('#doors').classList.add('closed');
+ setTimeout(()=>{enter(id);setTimeout(()=>{$('#doors').classList.remove('closed');busy=false;},FX.reduced?60:220);},FX.reduced?100:680);}
+function enter(id){if(!isUnlocked(id))id='hub';   /* last-line guard */
+ Anim.clearRoom();Clock.mult=1;const room=$('#room');room.innerHTML='';S.room=id;$('#stage').scrollTop=0;
+ if(id==='hub'){document.documentElement.style.setProperty('--acc','#62e3ff');$('#locN').textContent='Central Command';$('#locW').textContent='Command Deck';renderHub(room);
+  Comms.say('AEGIS — STATION INTELLIGENCE','Welcome back, Chief. Ten operations await. Work through them in order: each trains a skill you will need when Protocol Zero begins.');$('#hintBtn').onclick=()=>{Sfx.blip();Comms.log('Select a numbered node on the station ring.');};}
+ else{const m=MISSIONS[id-1];document.documentElement.style.setProperty('--acc',m.acc);BG.set(m.style,m.acc,m.bio);$('#locN').textContent=m.env;$('#locW').textContent=m.wing;
+  room.appendChild(h('div','mhead','<span class="mno">MISSION '+String(m.id).padStart(2,'0')+'</span><h2>'+m.title+'</h2><span class="env">'+m.env+'</span>'));const body=h('div');room.appendChild(body);
+  Comms.say(m.from,m.brief);$('#hintBtn').onclick=()=>{Sfx.blip();Comms.log('Intel: '+m.hint,'w');};
+  m.init(body,{finish:(s,l)=>showDebrief(m,clamp(s,0,1),l)});}
+ buildRail();}
+
+/* ---------------- boot ---------------- */
+BG.init();Anim.add(()=>{},false);requestAnimationFrame(t=>{Anim.last=t;requestAnimationFrame(Anim.loop);});
+updateIntegrity();buildRail();
+/* ---------------- instructions page ---------------- */
+$('#instrSkills').innerHTML=MISSIONS.map(m=>'<div class="sk"><i>'+String(m.id).padStart(2,'0')+'</i><span>'+m.title+'</span></div>').join('');
+let started=false;
+function showInstructions(){const el=$('#instr');el.removeAttribute('inert');el.setAttribute('aria-hidden','false');el.classList.remove('gone');$('#instr').scrollTop=0;$('#instrX').focus({preventScroll:true});}
+function closeInstructions(){const el=$('#instr');if(el.classList.contains('gone'))return;Sfx.init();Sfx.comm();el.classList.add('gone');el.setAttribute('inert','');el.setAttribute('aria-hidden','true');
+ if(!started){started=true;enter('hub');}}   /* first close opens Central Command; later closes only reveal the screen underneath, nothing resets */
+$('#instrX').onclick=closeInstructions;$('#instrGo').onclick=closeInstructions;
+$('#helpBtn').onclick=()=>{Sfx.init();Sfx.blip();showInstructions();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#instr').classList.contains('gone'))closeInstructions();});
+setTimeout(()=>{if(!started){BG.set('command','#62e3ff');}},0);
+showInstructions();
+</script>
+</body>
+</html>
