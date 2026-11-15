@@ -1,12 +1,5 @@
-# Customer Purchase Behavioural Analysis And Aegis Station - OutBreak Analysis
+# Customer Purchase Behavioural Analysis And Aegis Station - OutBreak Analyst
 
-## Project Team
-
-| Name | Roll Number |
-|---|---|
-| CH. L Karthik | EC24B1108 |
-| O. Sai | EC24B1109 |
-| S. Yagnesh | EC24B1103 |
 
 ## Project Parts
 
@@ -16,6 +9,14 @@ This project consists of two parts:
 |---|---|---|---|
 | Part A | Customer Purchase Behavioural Analysis | Analysis of customer purchasing patterns and prediction of repeat purchases using machine learning. | This repository |
 | Part B | Aegis Station – OUTBREAK ANALYST | A browser-based data-science strategy game involving outbreak analysis and decision-making through interactive missions. | [Play Game](https://aegis-station-0db463.netlify.app) · [HTML File](./outbreak_analyst.html) |
+
+## Team Details
+
+| Name | Roll Number |
+|---|---|
+| CH. L Karthik | EC24B1108 |
+| O. Sai | EC24B1109 |
+| S. Yagnesh | EC24B1103 |
 
 ---
 
